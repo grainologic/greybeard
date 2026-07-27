@@ -1,0 +1,23 @@
+{
+  "name": "greybeard",
+  "version": "1.0.0",
+  "description": "A lazy-principal-engineer overlay for pi: a coding ladder and anti-slop writing standards with in-editor enforcement.",
+  "keywords": ["pi-package", "pi", "extension", "code-review", "writing", "yagni"],
+  "license": "MIT",
+  "type": "module",
+  "files": [
+    "index.ts",
+    "lib/",
+    "standards/",
+    "skills/",
+    "README.md",
+    "LICENSE"
+  ],
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*",
+    "@earendil-works/pi-tui": "*"
+  },
+  "pi": {
+    "extensions": ["./index.ts"]
+  }
+}
