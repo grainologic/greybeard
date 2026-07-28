@@ -1,4 +1,4 @@
-// greybeard: a lazy-principal-engineer overlay for pi.
+// A lazy-principal-engineer overlay for pi.
 //
 // Two axes, toggled independently:
 //   code  -> the coding ladder (standards/coding.md) injected as steering
@@ -6,8 +6,8 @@
 //
 // Enforcement is deliberately small and soft (nothing blocks the model):
 //   - dependency installs get a decision-comment reminder appended to the tool result (steers, does not block)
-//   - typography in prose files is auto-fixed on disk (emoji, tight en-dash) with zero model tokens
-//   - em-dashes are queued and fed back once per run for a real rephrase (capped)
+//   - typography in prose files is auto-fixed on disk (emoji, tight en-dash, curly quotes) with zero model tokens
+//   - AI-tells needing judgment (em-dash, vocabulary cluster) are appended to the model's own write result so it self-corrects the same turn: finding-only, capped per file, no advertised tool, and a passing scan is silent (never a "clean" signal to game)
 //   - opt-in: flag a run that changed logic but touched no test
 //
 // Settings live in two lazily-created files (config.ts): a project-local
@@ -22,8 +22,9 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { CONFIG_DIR_NAME, getSettingsListTheme, type ExtensionAPI, type ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { Box, Container, Key, type SettingItem, SettingsList, Text } from "@earendil-works/pi-tui";
-import { cleanTypography, findEmDashSentences } from "./lib/typography.ts";
+import { cleanTypography } from "./lib/typography.ts";
 import { detectDependencyInstall } from "./lib/deps.ts";
+import { findTells, formatTells } from "./lib/tells.ts";
 import { clearGlobal, clearLocal, DEFAULT_MARKER, DEFAULT_MODE, type Mode, resolveConfig, writeGlobal, writeLocal } from "./lib/config.ts";
 
 const baseDir = dirname(fileURLToPath(import.meta.url));
@@ -50,12 +51,14 @@ const markerLine = (m: string) =>
 
 const PROSE = /\.(md|mdx|markdown|txt|rst)$/i;
 const TEST = /(^|[/\\])(tests?|spec|__tests__)[/\\]|\.(test|spec)\./i;
-const MAX_REPHRASES = 3;
+// Per-file re-flag ceiling per run. A model that cannot fix a tell would otherwise loop
+// on re-writes; after the cap the append goes silent and the run ends.
+const TELL_CAP = 3;
 
 const isProse = (p: string) => PROSE.test(p) || /COMMIT_EDITMSG$/.test(p);
 const isTest = (p: string) => TEST.test(p);
 
-type ActionKind = "typo" | "dep" | "rephrase" | "test";
+type ActionKind = "typo" | "dep" | "tell" | "test";
 interface Action {
   kind: ActionKind;
   detail: string;
@@ -65,12 +68,12 @@ interface LogData {
 }
 
 function summarize(actions: Action[]): string {
-  const c: Record<ActionKind, number> = { typo: 0, dep: 0, rephrase: 0, test: 0 };
+  const c: Record<ActionKind, number> = { typo: 0, dep: 0, tell: 0, test: 0 };
   for (const a of actions) c[a.kind]++;
   const parts: string[] = [];
   if (c.typo) parts.push(`${c.typo} typography fix${c.typo > 1 ? "es" : ""}`);
   if (c.dep) parts.push(`${c.dep} dependency flag${c.dep > 1 ? "s" : ""}`);
-  if (c.rephrase) parts.push(`${c.rephrase} rephrase${c.rephrase > 1 ? "s" : ""} queued`);
+  if (c.tell) parts.push(`${c.tell} tell${c.tell > 1 ? "s" : ""} flagged`);
   if (c.test) parts.push("test gap");
   return parts.join(", ");
 }
@@ -114,19 +117,18 @@ export default function greybeard(pi: ExtensionAPI): void {
   let runLedger: Action[] = [];
   let touchedSource = false;
   let touchedTest = false;
-  let emLeaks: string[] = [];
-  let rephrasesSent = 0;
-  let oneShotProse = false; // `/greybeard write`: run prose enforcement for this run (and its rephrase loop) without touching the axes
+  const tellFlags = new Map<string, number>(); // per-file tell-append count this run (TELL_CAP guard)
+  let oneShotProse = false; // `/greybeard write`: run prose enforcement for this run without touching the axes
 
   // session state
-  const totals = { typo: 0, dep: 0, rephrase: 0 };
+  const totals = { typo: 0, dep: 0, tell: 0 };
 
   const axesLabel = () => [mode.code && "code", mode.prose && "prose"].filter(Boolean).join("+");
   const sessionLine = () => {
     const p: string[] = [];
     if (totals.typo) p.push(`${totals.typo} fixes`);
     if (totals.dep) p.push(`${totals.dep} flags`);
-    if (totals.rephrase) p.push(`${totals.rephrase} rephrases`);
+    if (totals.tell) p.push(`${totals.tell} tells`);
     return p.length ? p.join(", ") : "no actions yet";
   };
 
@@ -190,7 +192,6 @@ export default function greybeard(pi: ExtensionAPI): void {
 
   pi.on("input", (event) => {
     if (event.source !== "extension") {
-      rephrasesSent = 0; // fresh rephrase budget per real prompt
       oneShotProse = false; // a real prompt ends any pending one-shot write
     }
   });
@@ -200,7 +201,7 @@ export default function greybeard(pi: ExtensionAPI): void {
     runLedger = [];
     touchedSource = false;
     touchedTest = false;
-    emLeaks = [];
+    tellFlags.clear();
     syncStatus(ctx);
   });
 
@@ -232,7 +233,10 @@ export default function greybeard(pi: ExtensionAPI): void {
     if (isTest(path)) touchedTest = true;
     else if (!isProse(path)) touchedSource = true;
 
-    // writing: typography auto-fix (silent, zero tokens) + em-dash queue
+    // writing: silent on-disk fix for safe substitutions (zero tokens), then flag the
+    // tells that need judgment back into the model's own tool result so it self-corrects
+    // this turn, before the user looks. Finding-only: a passing scan appends nothing, so
+    // silence is never a "clean" signal. No advertised tool means no green light to game.
     if ((mode.prose || oneShotProse) && isProse(path)) {
       let content: string;
       try {
@@ -251,12 +255,20 @@ export default function greybeard(pi: ExtensionAPI): void {
           /* best effort; presentation only */
         }
       }
-      for (const s of findEmDashSentences(cleaned)) if (!emLeaks.includes(s)) emLeaks.push(s);
+      const tells = findTells(cleaned);
+      const flagged = tellFlags.get(path) ?? 0;
+      if (tells.length && flagged < TELL_CAP) {
+        tellFlags.set(path, flagged + 1);
+        runLedger.push({ kind: "tell", detail: `${path}: ${tells.length} tell(s)` });
+        totals.tell++;
+        syncStatus(ctx);
+        return { content: [...event.content, { type: "text" as const, text: formatTells(tells) }] };
+      }
     }
     return undefined;
   });
 
-  // -- end of run: test backstop, action card, capped em-dash rephrase --
+  // -- end of run: test backstop, action card --
   pi.on("agent_settled", (_event, ctx) => {
     active = false;
 
@@ -264,28 +276,9 @@ export default function greybeard(pi: ExtensionAPI): void {
       runLedger.push({ kind: "test", detail: "logic changed, no test touched (rung 9)" });
     }
 
-    let willRephrase = false;
-    if ((mode.prose || oneShotProse) && emLeaks.length) {
-      if (rephrasesSent < MAX_REPHRASES) {
-        willRephrase = true;
-        rephrasesSent++;
-        totals.rephrase++;
-        runLedger.push({ kind: "rephrase", detail: `${emLeaks.length} sentence(s)` });
-      } else {
-        runLedger.push({ kind: "rephrase", detail: `${emLeaks.length} sentence(s) left as-is after ${MAX_REPHRASES} tries` });
-      }
-    }
-
     if (runLedger.length) pi.appendEntry<LogData>("greybeard-log", { actions: [...runLedger] });
 
-    if (willRephrase) {
-      const list = emLeaks.map((s) => `- ${s}`).join("\n");
-      pi.sendUserMessage(
-        `greybeard: these sentences use an em-dash. Restructure each to remove it (rewrite the sentence; do not swap the dash for a comma or hyphen), then re-save:\n${list}`,
-      );
-    } else {
-      oneShotProse = false; // one-shot write and its rephrase loop are done
-    }
+    oneShotProse = false; // the one-shot write's run is done
     syncStatus(ctx);
   });
 

@@ -1,5 +1,5 @@
-// config.ts — greybeard settings, lazy-materialized. Neither file is created
-// until you set something; a missing file is the defaults, not an error.
+// greybeard settings, lazy-materialized. Neither file is created until you set
+// something; a missing file resolves to the defaults.
 //
 //   local:  <cwd>/<configDir>/greybeard.json   this project, read only when
 //           trusted, and the file a subagent spawned here inherits.
@@ -53,7 +53,7 @@ export interface Resolved extends Config {
   hideStatus: boolean;
 }
 
-// A missing, empty, or malformed file reads as "nothing set" — never throws.
+// A missing, empty, or malformed file reads as "nothing set": a parse error returns empty.
 function readPartial(path: string): Partial_ {
   try {
     const obj = JSON.parse(readFileSync(path, "utf8").replace(/^\uFEFF/, "")); // strip BOM (Windows)

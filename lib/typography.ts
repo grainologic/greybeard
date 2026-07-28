@@ -2,10 +2,10 @@
 // Fixes only marks that make human-facing prose read as machine-generated, and
 // never touches code: fenced ``` blocks and `inline` spans pass through verbatim.
 //
-// Two kinds of mark, two treatments:
-//   cleanTypography(text)     -> silent in-place fix (emoji, tight word en-dash). Safe substitution.
-//   findEmDashSentences(text) -> em-dash removal is a rephrase, not a substitution;
-//                                return the sentences carrying one so the model can restructure.
+// cleanTypography(text) -> silent in-place fix (emoji, tight word en-dash, curly quotes).
+// Safe substitutions only. Em-dash and vocabulary tells are not safe substitutions (they
+// need a restructure or a judgment-call synonym), so they live in tells.ts and are flagged
+// to the model, not fixed here.
 
 // One capturing group => String.split keeps code regions at odd indices.
 const CODE = /(```[\s\S]*?```|~~~[\s\S]*?~~~|`[^`\n]+`)/g;
@@ -26,20 +26,12 @@ function fixProse(s: string): string {
     // Emoji removal keeps one space only when it sat between two, else closes the gap.
     // No other whitespace is touched: segment boundaries next to code spans are not line ends.
     .replace(EMOJI, (m) => (/^[ \t]/.test(m) && /[ \t]$/.test(m) ? " " : ""))
-    .replace(/(\p{L})–(\p{L})/gu, "$1-$2"); // tight word en-dash -> hyphen; numeric ranges (1–10) untouched
+    .replace(/(\p{L})–(\p{L})/gu, "$1-$2") // tight word en-dash -> hyphen; numeric ranges (1–10) untouched
+    .replace(/[“”]/g, '"') // curly double quotes -> straight
+    .replace(/[‘’]/g, "'"); // curly single quotes / apostrophe -> straight
 }
 
 export function cleanTypography(text: string): string {
   return outsideCode(text, fixProse);
 }
 
-export function findEmDashSentences(text: string): string[] {
-  const prose = text
-    .split(CODE)
-    .filter((_, i) => i % 2 === 0)
-    .join("");
-  return prose
-    .split(/(?<=[.!?])\s+|\n+/) // CS: naive sentence split, good enough to show context
-    .map((s) => s.trim())
-    .filter((s) => s.includes("—"));
-}
