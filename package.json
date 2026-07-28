@@ -1,10 +1,23 @@
 {
-  "name": "greybeard",
-  "version": "1.0.0",
-  "description": "A lazy-principal-engineer overlay for pi: a coding ladder and anti-slop writing standards with in-editor enforcement.",
-  "keywords": ["pi-package", "pi", "extension", "code-review", "writing", "yagni"],
+  "name": "pi-greybeard",
+  "version": "1.0.2",
+  "description": "A wizened principal-engineer overlay for pi: a coding ladder and anti-slop writing standards with in-editor enforcement.",
+  "keywords": [
+    "pi-package",
+    "pi",
+    "extension",
+    "code-review",
+    "writing",
+    "yagni"
+  ],
   "license": "MIT",
   "type": "module",
+  "author": "Grainologic",
+  "homepage": "https://github.com/grainologic/greybeard",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/grainologic/greybeard.git"
+  },
   "files": [
     "index.ts",
     "lib/",
@@ -18,6 +31,9 @@
     "@earendil-works/pi-tui": "*"
   },
   "pi": {
-    "extensions": ["./index.ts"]
+    "extensions": [
+      "./index.ts"
+    ],
+    "image": "https://raw.githubusercontent.com/grainologic/greybeard/main/resources/greybeard.png"
   }
 }

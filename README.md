@@ -30,8 +30,8 @@ The rules are the voice in the room. These are its hands:
 | When | What happens |
 |---|---|
 | A `bash` command installs a named dependency | Leaves a reminder that a new dependency is a design decision worth a justifying comment. Covers most package managers (13, in `lib/deps.ts`): npm, pip/poetry/uv, cargo, go, vcpkg, dotnet, and more. |
-| A prose file is written | Fixes emoji and tight en-dashes on disk, silently. |
-| A prose file still carries em-dashes | Returns the offending sentences once for a rewrite (up to 3 per prompt). |
+| A prose file is written | Fixes safe typography on disk, silently: emoji, tight en-dashes, curly quotes. |
+| A prose file carries a tell that needs judgment | Appends the offending sentences to the model's own write result (em-dash, cluster vocabulary) so it self-corrects the same turn. Finding-only and capped; a clean scan says nothing. |
 | Source changed, but no test did | Flags the run at the end. Stays quiet until you turn it on. |
 
 Around all that: a statusline, a card summing up each run, a toggle panel, and
@@ -42,20 +42,20 @@ Around all that: a statusline, a card summing up each run, a toggle panel, and
 Install it with pi, for every project:
 
 ```bash
-pi install git:github.com/aashishvasu/greybeard
+pi install npm:pi-greybeard
 ```
 
 Or just this project (writes to `.pi/settings.json`, so you can commit it and
 your team gets it on startup):
 
 ```bash
-pi install -l git:github.com/aashishvasu/greybeard
+pi install -l npm:pi-greybeard
 ```
 
 Or try it for one run without installing:
 
 ```bash
-pi -e git:github.com/aashishvasu/greybeard
+pi -e npm:pi-greybeard
 ```
 
 Editing `standards/coding.md` or `standards/writing.md` and running `/reload`
@@ -113,17 +113,19 @@ it to keep it yours.
   and the writing standards. Reports what to cut, edits nothing unless asked.
 - `/skill:greybeard-audit`: the same hunt across the whole repo, ranked by
   payoff.
+- `/skill:greybeard-ledger`: harvest greybeard's decision comments into a
+  ledger, splitting settled decisions from deferred debt. One-shot report.
 
 ## Development
 
 Tests are `*.selfcheck.ts`, plain `node --test`, no framework:
 
 ```bash
-node --test '**/*.selfcheck.ts'
+node --test --experimental-strip-types 'test/*.selfcheck.ts'
 ```
 
 Layout: `index.ts` is the pi entry (the only file that touches the pi API and
 must sit at the extension root for auto-discovery). `lib/` holds the pure,
-pi-free logic (`config.ts`, `deps.ts`, `typography.ts`), which is why it runs
+pi-free logic (`config.ts`, `deps.ts`, `typography.ts`, `tells.ts`), which is why it runs
 under a bare Node. `test/` holds the self-checks, `standards/` the rules it
 applies, `skills/` the on-demand review and audit passes.
