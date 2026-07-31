@@ -28,8 +28,11 @@ const helpBlock = (() => {
   return src.slice(start, src.indexOf("];", start));
 })();
 const readmeCommands = (() => {
-  const start = readme.indexOf("## Commands");
-  const end = readme.indexOf("\n## ", start + 1);
+  // Anchor on the table header, not the section heading: heading text is prose
+  // and gets restyled; the table shape is the contract.
+  const start = readme.indexOf("| Command | Effect |");
+  if (start === -1) return "";
+  const end = readme.indexOf("\n## ", start);
   return readme.slice(start, end === -1 ? undefined : end);
 })();
 
@@ -49,6 +52,7 @@ test("every subcommand is in the help card", () => {
 });
 
 test("every subcommand is in the README commands table", () => {
+  assert.ok(readmeCommands, "README commands table not found (no '| Command | Effect |' header)");
   const missing = commands.filter((c) => !word(c).test(readmeCommands));
   assert.deepEqual(missing, [], `undocumented in README: ${missing.join(", ")}`);
 });

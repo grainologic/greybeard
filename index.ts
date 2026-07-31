@@ -25,7 +25,7 @@ import { Box, Container, Key, type SettingItem, SettingsList, Text } from "@eare
 import { cleanTypography } from "./lib/typography.ts";
 import { detectDependencyInstall } from "./lib/deps.ts";
 import { findTells, formatTells } from "./lib/tells.ts";
-import { clearGlobal, clearLocal, DEFAULT_MARKER, DEFAULT_MODE, type Mode, resolveConfig, writeGlobal, writeLocal } from "./lib/config.ts";
+import { clearGlobal, clearLocal, DEFAULT_MARKER, DEFAULT_MODE, type Mode, parseAxesSpec, resolveConfig, writeGlobal, writeLocal } from "./lib/config.ts";
 
 const baseDir = dirname(fileURLToPath(import.meta.url));
 
@@ -105,6 +105,14 @@ const HELP: string[] = [
 ];
 
 export default function greybeard(pi: ExtensionAPI): void {
+  // Per-invocation axes override, aimed at headless runs: `pi --greybeard code,prose ...`.
+  // Highest-precedence layer, never persisted, honored untrusted (an axes spec carries
+  // no free text into the model's instructions, unlike the decision prefix).
+  pi.registerFlag("greybeard", {
+    description: "Axes override for this invocation: off | on | comma list of code,prose,test",
+    type: "string",
+  });
+
   let mode: Mode = { ...DEFAULT_MODE };
   let marker = DEFAULT_MARKER;
   let lastCtx: ExtensionContext | undefined;
@@ -113,6 +121,7 @@ export default function greybeard(pi: ExtensionAPI): void {
   let hideStatus = false; // hand-edited config flag: keep greybeard active, hide the indicator
 
   // per-run state
+  let specError = false; // invalid --greybeard spec: session is shutting down, abort any turn that races it
   let active = false;
   let runLedger: Action[] = [];
   let touchedSource = false;
@@ -185,6 +194,28 @@ export default function greybeard(pi: ExtensionAPI): void {
     mode = c.mode;
     marker = c.marker;
     hideStatus = c.hideStatus;
+    const spec = pi.getFlag("greybeard");
+    if (spec !== undefined) {
+      const parsed = typeof spec === "string" ? parseAxesSpec(spec) : undefined;
+      if (!parsed) {
+        // Kill the session, not just this handler: pi logs a thrown handler error
+        // and keeps running, which in a headless run would silently measure the
+        // wrong axes. Axes go dark, the turn (if one races the exit) gets aborted
+        // in agent_start, and the session shuts down.
+        specError = true;
+        mode = { code: false, prose: false, test: false };
+        const msg = `greybeard: invalid --greybeard spec "${String(spec)}" (off | on | comma list of code,prose,test); shutting down`;
+        console.error(msg);
+        try {
+          ctx.ui.notify(msg, "error");
+        } catch {
+          /* headless: stderr already has it */
+        }
+        ctx.shutdown();
+        return;
+      }
+      mode = parsed;
+    }
     active = false;
     runLedger = [];
     syncStatus(ctx);
@@ -197,6 +228,12 @@ export default function greybeard(pi: ExtensionAPI): void {
   });
 
   pi.on("agent_start", (_event, ctx) => {
+    if (specError) {
+      // Doomed session (invalid --greybeard spec): never let a racing turn reach the API.
+      ctx.abort();
+      ctx.shutdown();
+      return;
+    }
     active = true;
     runLedger = [];
     touchedSource = false;

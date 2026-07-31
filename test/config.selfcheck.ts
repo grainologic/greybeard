@@ -3,7 +3,7 @@ import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { clearGlobal, clearLocal, DEFAULT_MARKER, DEFAULT_MODE, resolveConfig, writeGlobal, writeLocal } from "../lib/config.ts";
+import { clearGlobal, clearLocal, DEFAULT_MARKER, DEFAULT_MODE, parseAxesSpec, resolveConfig, writeGlobal, writeLocal } from "../lib/config.ts";
 
 // Each test gets its own sandbox for both the global dir (via XDG_CONFIG_HOME)
 // and the project cwd, so runs never touch the real ~/.config or leak into each other.
@@ -75,6 +75,21 @@ test("hideStatus resolves local over global, defaults false", () => {
   assert.equal(resolveConfig(cwd, true, DIR).hideStatus, false);
   writeFileSync(writeLocal(cwd, { mode: { ...DEFAULT_MODE }, marker: "x" }, DIR), JSON.stringify({ hideStatus: true }));
   assert.equal(resolveConfig(cwd, true, DIR).hideStatus, true);
+});
+
+test("parseAxesSpec: valid specs parse exactly, case- and space-insensitive", () => {
+  assert.deepEqual(parseAxesSpec("off"), { code: false, prose: false, test: false });
+  assert.deepEqual(parseAxesSpec("on"), { code: true, prose: true, test: false });
+  assert.deepEqual(parseAxesSpec("code"), { code: true, prose: false, test: false });
+  assert.deepEqual(parseAxesSpec("prose"), { code: false, prose: true, test: false });
+  assert.deepEqual(parseAxesSpec("code,prose"), { code: true, prose: true, test: false });
+  assert.deepEqual(parseAxesSpec(" Code , PROSE ,test "), { code: true, prose: true, test: true });
+});
+
+test("parseAxesSpec: junk is rejected, never guessed", () => {
+  for (const bad of ["", "  ", "codes", "code+prose", "code,", ",", "code,,prose", "all", "true", "on,code"]) {
+    assert.equal(parseAxesSpec(bad), undefined, `"${bad}" must be rejected`);
+  }
 });
 
 test("a snapshot write preserves a hand-edited hideStatus", () => {
