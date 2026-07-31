@@ -5,7 +5,7 @@ description: Whole-repo scan for over-engineering and slop against the greybeard
 
 # greybeard-audit
 
-Scan the whole repository against `standards/coding.md` and `standards/writing.md` in this extension's directory. Unlike greybeard-review, this reads the codebase rather than a diff, so it will miss nothing to a read window but must stay ruthless about ranking.
+Scan the whole repository against `../../standards/coding.md` and `../../standards/writing.md`, resolved relative to this SKILL.md file, not the working directory. Unlike greybeard-review, this reads the codebase rather than a diff, so it will miss nothing to a read window but must stay ruthless about ranking.
 
 ## What to hunt
 
