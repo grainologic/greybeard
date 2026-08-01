@@ -22,7 +22,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { CONFIG_DIR_NAME, getSettingsListTheme, type ExtensionAPI, type ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { Box, Container, Key, type SettingItem, SettingsList, Text } from "@earendil-works/pi-tui";
-import { cleanSourceComments, cleanTypography } from "./lib/typography.ts";
+import { cleanSourceComments, cleanTypography, type GlyphTally } from "./lib/typography.ts";
 import { detectDependencyInstall } from "./lib/deps.ts";
 import { findTells, formatTells } from "./lib/tells.ts";
 import { clearGlobal, clearLocal, DEFAULT_MARKER, DEFAULT_MODE, type Mode, parseAxesSpec, resolveConfig, writeGlobal, writeLocal } from "./lib/config.ts";
@@ -62,16 +62,22 @@ type ActionKind = "typo" | "dep" | "tell" | "test";
 interface Action {
   kind: ActionKind;
   detail: string;
+  count?: number; // typo: glyphs fixed in this file (absent on entries from older sessions)
 }
 interface LogData {
   actions: Action[];
 }
 
+// One line for the run card and the run-end toast: what ran, with one number each.
 function summarize(actions: Action[]): string {
   const c: Record<ActionKind, number> = { typo: 0, dep: 0, tell: 0, test: 0 };
-  for (const a of actions) c[a.kind]++;
+  let glyphs = 0;
+  for (const a of actions) {
+    c[a.kind]++;
+    if (a.kind === "typo") glyphs += a.count ?? 1;
+  }
   const parts: string[] = [];
-  if (c.typo) parts.push(`${c.typo} typography fix${c.typo > 1 ? "es" : ""}`);
+  if (c.typo) parts.push(`${glyphs} glyph${glyphs > 1 ? "s" : ""} fixed`);
   if (c.dep) parts.push(`${c.dep} dependency flag${c.dep > 1 ? "s" : ""}`);
   if (c.tell) parts.push(`${c.tell} tell${c.tell > 1 ? "s" : ""} flagged`);
   if (c.test) parts.push("test gap");
@@ -96,6 +102,7 @@ const HELP: string[] = [
   "  /greybeard default                    save current settings as the global default",
   "  /greybeard reset [local|global|all]   drop a settings layer, re-resolve",
   "  /greybeard status                     current axes, prefix, session tally",
+  "  /greybeard stats                      session stats panel (glyphs, flags, tells)",
   "  /greybeard help                       this card",
   "  ctrl-alt-g                            flip greybeard on/off",
   "",
@@ -129,8 +136,13 @@ export default function greybeard(pi: ExtensionAPI): void {
   const tellFlags = new Map<string, number>(); // per-file tell-append count this run (TELL_CAP guard)
   let oneShotProse = false; // `/greybeard write`: run prose enforcement for this run without touching the axes
 
-  // session state
-  const totals = { typo: 0, dep: 0, tell: 0 };
+  // session state, memory only: totals for the status line, plus what the stats
+  // panel shows (glyphs by category, files cleaned, how many runs took action)
+  const totals = { typo: 0, dep: 0, tell: 0, test: 0 };
+  const glyphTotals: GlyphTally = {};
+  const cleanedFiles = new Set<string>();
+  let runs = 0;
+  let runsWithActions = 0;
 
   const axesLabel = () => [mode.code && "code", mode.prose && "prose"].filter(Boolean).join("+");
   const sessionLine = () => {
@@ -235,6 +247,7 @@ export default function greybeard(pi: ExtensionAPI): void {
       return;
     }
     active = true;
+    runs++;
     runLedger = [];
     touchedSource = false;
     touchedTest = false;
@@ -289,12 +302,16 @@ export default function greybeard(pi: ExtensionAPI): void {
       } catch {
         return undefined;
       }
-      const cleaned = prose ? cleanTypography(content) : cleanSourceComments(content, path);
+      const tally: GlyphTally = {};
+      const cleaned = prose ? cleanTypography(content, tally) : cleanSourceComments(content, path, tally);
       if (cleaned !== content) {
         try {
           writeFileSync(path, cleaned);
-          runLedger.push({ kind: "typo", detail: path });
+          const n = Object.values(tally).reduce((a, b) => a + b, 0);
+          runLedger.push({ kind: "typo", detail: path, count: n });
           totals.typo++;
+          for (const [k, v] of Object.entries(tally)) glyphTotals[k] = (glyphTotals[k] ?? 0) + v;
+          cleanedFiles.add(path);
           syncStatus(ctx);
         } catch {
           /* best effort; presentation only */
@@ -320,9 +337,22 @@ export default function greybeard(pi: ExtensionAPI): void {
 
     if (mode.test && touchedSource && !touchedTest) {
       runLedger.push({ kind: "test", detail: "logic changed, no test touched (rung 9)" });
+      totals.test++;
     }
 
-    if (runLedger.length) pi.appendEntry<LogData>("greybeard-log", { actions: [...runLedger] });
+    if (runLedger.length) {
+      runsWithActions++;
+      pi.appendEntry<LogData>("greybeard-log", { actions: [...runLedger] });
+      // Run-end toast: one notify, only when something happened. Transient; the
+      // card above is the durable record.
+      if (ctx.hasUI) {
+        try {
+          ctx.ui.notify(`greybeard: ${summarize(runLedger)}`, "info");
+        } catch {
+          /* presentation only */
+        }
+      }
+    }
 
     oneShotProse = false; // the one-shot write's run is done
     syncStatus(ctx);
@@ -353,7 +383,7 @@ export default function greybeard(pi: ExtensionAPI): void {
   }
 
   pi.registerCommand("greybeard", {
-    description: "greybeard: no arg opens the panel; write <instructions> | code|prose|test [on|off] | on | off | prefix <text|none> | default | reset [local|global|all] | status | help",
+    description: "greybeard: no arg opens the panel; write <instructions> | code|prose|test [on|off] | on | off | prefix <text|none> | default | reset [local|global|all] | status | stats | help",
     handler: async (args, ctx) => {
       const raw = String(args || "").trim();
       const sub = raw.toLowerCase();
@@ -425,6 +455,42 @@ export default function greybeard(pi: ExtensionAPI): void {
         marker = c.marker;
         syncStatus(ctx);
         return report();
+      }
+
+      // Session stats: what the enforcement did since the session started. Memory
+      // only, an overlay, not an entry: it advances nothing and persists nowhere.
+      if (sub === "stats") {
+        const glyphs = Object.values(glyphTotals).reduce((a, b) => a + b, 0);
+        const cats = [
+          ["substituted", "substituted"],
+          ["emoji", "emoji removed"],
+          ["invisible", "invisible marks"],
+          ["space", "spaces normalized"],
+        ] as const;
+        const breakdown = cats
+          .filter(([k]) => glyphTotals[k])
+          .map(([k, label]) => `${glyphTotals[k]} ${label}`)
+          .join(", ");
+        const lines: string[] = [];
+        if (glyphs) lines.push(`glyph fixes       ${glyphs} in ${cleanedFiles.size} file${cleanedFiles.size > 1 ? "s" : ""} (${breakdown})`);
+        if (totals.dep) lines.push(`dependency flags  ${totals.dep}`);
+        if (totals.tell) lines.push(`tells flagged     ${totals.tell}`);
+        if (totals.test) lines.push(`test gaps         ${totals.test}`);
+        if (lines.length) lines.push(`runs              ${runsWithActions} of ${runs} took action`);
+        else lines.push("no enforcement actions this session");
+        if (ctx.mode !== "tui") return ctx.ui.notify(`greybeard stats\n${lines.join("\n")}`, "info");
+        await ctx.ui.custom((_tui, theme, _kb, done) => {
+          const c = new Container();
+          c.addChild(new Text(`${GLYPH} ${theme.fg("accent", theme.bold("greybeard"))} ${theme.fg("muted", "session stats")}`, 1, 1));
+          for (const line of lines) c.addChild(new Text(theme.fg("text", `  ${line}`), 0, 0));
+          c.addChild(new Text(theme.fg("dim", "press any key to close"), 1, 0));
+          return {
+            render: (w) => c.render(w),
+            invalidate: () => c.invalidate(),
+            handleInput: () => done(undefined),
+          };
+        });
+        return;
       }
 
       if (sub === "status") return report();

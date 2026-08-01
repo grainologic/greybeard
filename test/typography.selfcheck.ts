@@ -128,3 +128,12 @@ test("source file: em-dash in a comment is left alone like everywhere else", () 
   const src = "// this is fine—or is it\n";
   assert.equal(cleanSourceComments(src, "app.ts"), src);
 });
+
+test("tally counts the work by category, and counts only prose regions", () => {
+  const tally: Record<string, number> = {};
+  cleanTypography("“a” → b 🚀 and `c → d`", tally);
+  assert.deepEqual(tally, { substituted: 3, emoji: 1 });
+  const src: Record<string, number> = {};
+  cleanSourceComments('x = "→"; // a → b ≤ c\n', "a.ts", src);
+  assert.deepEqual(src, { substituted: 2 });
+});

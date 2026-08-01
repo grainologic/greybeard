@@ -99,32 +99,40 @@ const SUBSTITUTIONS: Record<string, string> = {
 };
 const SUBSTITUTE = new RegExp(`[${Object.keys(SUBSTITUTIONS).join("")}]`, "g");
 
+// Per-category tally of the work done, mutated in place when passed. Keys:
+// substituted (spelled out or normalized), emoji (sequences removed), invisible
+// (marks removed), space (spaces normalized).
+export type GlyphTally = Record<string, number>;
+
 // Substitution runs before emoji removal on purpose: a few marks that have a keyboard
 // spelling are pictographic too (the bidirectional arrow, the small squares), and
 // spelling those out beats deleting them. What survives of an emoji presentation
 // sequence afterwards is a bare variation selector, which INVISIBLE clears.
-function normalize(s: string): string {
+function normalize(s: string, tally?: GlyphTally): string {
+  const inc = (k: string) => {
+    if (tally) tally[k] = (tally[k] ?? 0) + 1;
+  };
   return s
-    .replace(SUBSTITUTE, (c) => SUBSTITUTIONS[c])
-    .replace(EM_LOOKALIKE, "—")
-    .replace(EMOJI, (m) => (/^[ \t]/.test(m) && /[ \t]$/.test(m) ? " " : ""))
-    .replace(INVISIBLE, "")
-    .replace(SPACE, " ")
-    .replace(FULLWIDTH, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0))
-    .replace(TIGHT_EN_DASH, "$1-$2"); // "re-run pages 1-10": the numeric range keeps its en-dash
+    .replace(SUBSTITUTE, (c) => (inc("substituted"), SUBSTITUTIONS[c]))
+    .replace(EM_LOOKALIKE, () => (inc("substituted"), "—"))
+    .replace(EMOJI, (m) => (inc("emoji"), /^[ \t]/.test(m) && /[ \t]$/.test(m) ? " " : ""))
+    .replace(INVISIBLE, () => (inc("invisible"), ""))
+    .replace(SPACE, () => (inc("space"), " "))
+    .replace(FULLWIDTH, (c) => (inc("substituted"), String.fromCharCode(c.charCodeAt(0) - 0xfee0)))
+    .replace(TIGHT_EN_DASH, (_m, a, b) => (inc("substituted"), `${a}-${b}`)); // "re-run pages 1-10": the numeric range keeps its en-dash
 }
 
 // Prose file: clean everything except fenced blocks and inline spans, which are code
 // and belong to whoever wrote them.
-export function cleanTypography(text: string): string {
+export function cleanTypography(text: string, tally?: GlyphTally): string {
   return text
     .split(CODE)
-    .map((part, i) => (i % 2 === 1 ? part : normalize(part)))
+    .map((part, i) => (i % 2 === 1 ? part : normalize(part, tally)))
     .join("");
 }
 
 // Source file: clean comment bodies only. Identifiers, string literals, and data keep
 // every glyph, because there a glyph can be the point.
-export function cleanSourceComments(text: string, path: string): string {
-  return mapComments(text, path, normalize);
+export function cleanSourceComments(text: string, path: string, tally?: GlyphTally): string {
+  return mapComments(text, path, (body) => normalize(body, tally));
 }

@@ -118,6 +118,7 @@ changes the persona with no code change. The markdown is the config.
 | `/greybeard default` | Promote the current settings to the global default |
 | `/greybeard reset [local\|global\|all]` | Drop a settings layer (default `local`) and re-resolve |
 | `/greybeard status` | Report current axes, prefix, and session tally |
+| `/greybeard stats` | Session stats panel: glyphs fixed by category, dependency flags, tells, test gaps |
 | `/greybeard help` | Print the command reference card |
 | `ctrl-alt-g` | Flip greybeard on/off |
 
