@@ -3,6 +3,8 @@
 // Two axes, toggled independently:
 //   code  -> the coding ladder (standards/coding.md) injected as steering
 //   prose -> the writing standards (standards/writing.md) injected as steering
+// Either axis also injects the shared core (standards/core.md): standing orders,
+// claims-are-earned, anti-sycophancy. Off means nothing is injected.
 //
 // Enforcement is deliberately small and soft (nothing blocks the model):
 //   - dependency installs get a decision-comment reminder appended to the tool result (steers, does not block)
@@ -40,6 +42,7 @@ function readStandard(name: string): string {
     return "";
   }
 }
+const CORE = readStandard("core.md"); // the shared identity: injected whenever any standards axis is on
 const CODING = readStandard("coding.md");
 const WRITING = readStandard("writing.md");
 
@@ -88,7 +91,7 @@ function summarize(actions: Action[]): string {
 const HELP: string[] = [
   "greybeard: the least code that works, the least prose that informs.",
   "",
-  "Axes (toggle independently)",
+  "Axes (toggle independently; either standards axis also loads the shared core)",
   "  code    the coding ladder, build the least that works",
   "  prose   anti-slop writing standards + typography fixes",
   "  test    flag logic changed with no test touched",
@@ -190,6 +193,7 @@ export default function greybeard(pi: ExtensionAPI): void {
   // -- steering: inject only the enabled axes, appended to the chained system prompt --
   pi.on("before_agent_start", (event) => {
     const blocks: string[] = [];
+    if ((mode.code || mode.prose) && CORE) blocks.push(CORE);
     if (mode.code && CODING) blocks.push(CODING.replace("{{marker_line}}", markerLine(marker)));
     if (mode.prose && WRITING) blocks.push(WRITING);
     if (!blocks.length) return;
@@ -336,7 +340,7 @@ export default function greybeard(pi: ExtensionAPI): void {
     active = false;
 
     if (mode.test && touchedSource && !touchedTest) {
-      runLedger.push({ kind: "test", detail: "logic changed, no test touched (rung 9)" });
+      runLedger.push({ kind: "test", detail: "logic changed, no test touched (proof gate)" });
       totals.test++;
     }
 
@@ -417,7 +421,16 @@ export default function greybeard(pi: ExtensionAPI): void {
         if (!WRITING) return ctx.ui.notify("greybeard: writing standards unavailable (standards/writing.md missing)", "error");
         const instructions = raw.slice(6).trim();
         if (!instructions) return ctx.ui.notify("greybeard: nothing to write; pass instructions after 'write'", "warning");
-        pi.sendUserMessage(`${WRITING}\n\nApply the writing standards above to this task:\n\n${instructions}`);
+        // Inject only what the session lacks: prose axis on = everything already in the
+        // system prompt; code axis on = core is there, add writing; all off = add both.
+        const std = mode.prose ? [] : mode.code ? [WRITING] : [CORE, WRITING];
+        const blocks = std.filter(Boolean);
+        oneShotProse = true; // arm prose enforcement for this run without touching the axes
+        pi.sendUserMessage(
+          blocks.length
+            ? `${blocks.join("\n\n")}\n\nApply the writing standards above to this task:\n\n${instructions}`
+            : `Apply the writing standards to this task:\n\n${instructions}`,
+        );
         return ctx.ui.notify("greybeard: writing to the standards\u2026", "info");
       }
 

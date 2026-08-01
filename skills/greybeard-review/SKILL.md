@@ -5,7 +5,7 @@ description: Review a diff or named files against the greybeard coding ladder an
 
 # greybeard-review
 
-Review the target (a diff, a file, or files named in the argument; default to the current uncommitted diff) against two rubrics. Read them first: `../../standards/coding.md` and `../../standards/writing.md`, resolved relative to this SKILL.md file, not the working directory.
+Review the target (a diff, a file, or files named in the argument; default to the current uncommitted diff) against three rubrics. Read them first: `../../standards/core.md`, `../../standards/coding.md`, and `../../standards/writing.md`, resolved relative to this SKILL.md file, not the working directory.
 
 Report only what to change. Do not rewrite code or prose unless the user asks.
 

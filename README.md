@@ -103,8 +103,8 @@ Or try it for one run without installing:
 pi -e npm:pi-greybeard
 ```
 
-Editing `standards/coding.md` or `standards/writing.md` and running `/reload`
-changes the persona with no code change. The markdown is the config.
+Editing `standards/core.md`, `standards/coding.md`, or `standards/writing.md` and
+running `/reload` changes the persona with no code change. The markdown is the config.
 
 ## Telling it what to do
 
