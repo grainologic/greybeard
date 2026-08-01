@@ -72,7 +72,7 @@ The rules are the voice in the room. This is what the hands do.
 |   |
 |---|
 | **A `bash` command just installed a dependency. Now what?**<br>A reminder that a new dependency is a design decision worth a justifying comment. Covers most package managers (13, in `lib/deps.ts`): npm, pip, poetry, uv, cargo, go, vcpkg, dotnet, and more. |
-| **The model wrote a prose file. Emoji, curly quotes, the usual. Who cleans up?**<br>greybeard does, on disk, silently: emoji, tight en-dashes, curly quotes. Safe fixes only, no round trip through the model, no tokens spent. |
+| **The model pasted glyphs. Curly quotes, arrows, emoji, invisible spaces. Who cleans up?**<br>greybeard does, on disk, silently: every glyph with a keyboard spelling gets it (`->` for the arrow, `<=` for the comparison, straight quotes, `...` for the ellipsis), emoji and zero-width marks go, exotic spaces collapse. Whole file for prose, comment bodies only for source, so a glyph inside a string literal survives. Safe fixes only, no round trip through the model, no tokens spent. |
 | **A sentence reads like a machine wrote it. Then what?**<br>The offending sentences (em-dash, cluster vocabulary) come back appended to the model's own write result, so it self-corrects in the same turn. Finding-only and capped; a clean scan says nothing. |
 | **Source changed, but no test did.**<br>The run gets flagged at the end. This one stays quiet until you turn it on. |
 
@@ -171,6 +171,6 @@ node --test --experimental-strip-types 'test/*.selfcheck.ts'
 
 Layout: `index.ts` is the pi entry (the only file that touches the pi API and
 must sit at the extension root for auto-discovery). `lib/` holds the pure,
-pi-free logic (`config.ts`, `deps.ts`, `typography.ts`, `tells.ts`), which is why it runs
+pi-free logic (`config.ts`, `deps.ts`, `typography.ts`, `comments.ts`, `tells.ts`), which is why it runs
 under a bare Node. `test/` holds the self-checks, `standards/` the rules it
 applies, `skills/` the on-demand review and audit passes.

@@ -6,7 +6,7 @@
 //
 // Enforcement is deliberately small and soft (nothing blocks the model):
 //   - dependency installs get a decision-comment reminder appended to the tool result (steers, does not block)
-//   - typography in prose files is auto-fixed on disk (emoji, tight en-dash, curly quotes) with zero model tokens
+//   - pasted glyphs are auto-fixed on disk with zero model tokens: whole prose files, comment bodies in source files
 //   - AI-tells needing judgment (em-dash, vocabulary cluster) are appended to the model's own write result so it self-corrects the same turn: finding-only, capped per file, no advertised tool, and a passing scan is silent (never a "clean" signal to game)
 //   - opt-in: flag a run that changed logic but touched no test
 //
@@ -22,7 +22,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { CONFIG_DIR_NAME, getSettingsListTheme, type ExtensionAPI, type ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { Box, Container, Key, type SettingItem, SettingsList, Text } from "@earendil-works/pi-tui";
-import { cleanTypography } from "./lib/typography.ts";
+import { cleanSourceComments, cleanTypography } from "./lib/typography.ts";
 import { detectDependencyInstall } from "./lib/deps.ts";
 import { findTells, formatTells } from "./lib/tells.ts";
 import { clearGlobal, clearLocal, DEFAULT_MARKER, DEFAULT_MODE, type Mode, parseAxesSpec, resolveConfig, writeGlobal, writeLocal } from "./lib/config.ts";
@@ -274,14 +274,22 @@ export default function greybeard(pi: ExtensionAPI): void {
     // tells that need judgment back into the model's own tool result so it self-corrects
     // this turn, before the user looks. Finding-only: a passing scan appends nothing, so
     // silence is never a "clean" signal. No advertised tool means no green light to game.
-    if ((mode.prose || oneShotProse) && isProse(path)) {
+    //
+    // A prose file is cleaned whole, outside its code spans. A source file is cleaned in
+    // its comment bodies only, because a glyph in a string literal or an identifier may
+    // be the point; that runs under either axis, since comments are a code artifact and
+    // the pasted-glyph rule does not stop at the file extension. The tells pass stays
+    // prose-only: it costs the model a turn, and it is the writing axis that asks for it.
+    const prose = isProse(path);
+    const writingOn = mode.prose || oneShotProse;
+    if (prose ? writingOn : writingOn || mode.code) {
       let content: string;
       try {
         content = readFileSync(path, "utf8");
       } catch {
         return undefined;
       }
-      const cleaned = cleanTypography(content);
+      const cleaned = prose ? cleanTypography(content) : cleanSourceComments(content, path);
       if (cleaned !== content) {
         try {
           writeFileSync(path, cleaned);
@@ -292,6 +300,7 @@ export default function greybeard(pi: ExtensionAPI): void {
           /* best effort; presentation only */
         }
       }
+      if (!prose) return undefined;
       const tells = findTells(cleaned);
       const flagged = tellFlags.get(path) ?? 0;
       if (tells.length && flagged < TELL_CAP) {
