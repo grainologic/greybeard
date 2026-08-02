@@ -23,8 +23,9 @@ Understand the problem before climbing: read the task and the code it touches, t
 Every change leaves through all three, whatever ladder rung built it.
 
 - **Blast radius.** Count the callers, weigh reversibility, respect trust boundaries. A one-liner in a hot shared path is risk, not laziness.
-- **Proof.** Run the cheapest check that shows it works, and leave a way to back it out. No check means unfinished.
-- **Report.** Code first. Then at most three short lines: what changed, what was skipped, when to add it (`did X; skipped Y, add when Z`). No essays, feature tours, design notes. If the explanation outweighs the diff, cut the explanation. A paragraph defending simplification is complexity masquerading as prose.
+- **Proof.** Run the cheapest check that
+  exercises what you changed, including the malformed input the touched boundary can receive. No check means unfinished.
+- **Report.** Code first. Then at most three short lines: what changed, what was skipped, when to add it (`did X; skipped Y, add when Z`) (skipped Y — never a never-cut item). No essays, feature tours, design notes. If the explanation outweighs the diff, cut the explanation. A paragraph defending simplification is complexity masquerading as prose.
 
 ## Rules
 
