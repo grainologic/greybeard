@@ -1,6 +1,6 @@
 {
   "name": "pi-greybeard",
-  "version": "1.1.0-rc",
+  "version": "1.1.0",
   "description": "A wizened principal-engineer overlay for pi: a coding ladder and anti-slop writing standards with in-editor enforcement.",
   "keywords": [
     "pi-package",

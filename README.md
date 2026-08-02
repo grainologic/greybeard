@@ -86,7 +86,17 @@ Around all that: a statusline, a card summing up each run, a toggle panel, and
 `ctrl-alt-g` to flip everything on and off.
 
 ## Benchmarks
-[Coming soon!](https://github.com/grainologic/greybeard)
+
+Greybeard has been tested. An A/B harness runs each task twice on the same model, once bare, once with greybeard loaded. Same prompts, same checks. Five reps per arm, eight models, three providers. The suite and every result set live at [grainologic/greybeard-benchmarks](https://github.com/grainologic/greybeard-benchmarks).
+
+The averages, at the same pass rate:
+
+- **0.5x the code.** Or better, across the open-ended tasks. The models that build the most unasked came down 4x.
+- **0.75x the output tokens.** The chattiest model in the roster came down 3x.
+- **0.5x the words.** Same tool documented. Every output was scored for slop. Machine tells fell to a median of 0, even the ones the standards never name. The model learns the register, not a list. Accuracy went from 78% to 90%.
+- **Sooner.** The models that write the most before deciding finished 2.5x faster.
+
+The averages hide two things. Every deletion in the section above happened with greybeard on. No bare model ever subtracted. And nobody lied about a red build, either way. Greybeard led with the bad news. The bare models put a cheerful line first.
 
 ## Install
 
