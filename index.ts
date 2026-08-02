@@ -3,10 +3,12 @@
 // Two axes, toggled independently:
 //   code  -> the coding ladder (standards/coding.md) injected as steering
 //   prose -> the writing standards (standards/writing.md) injected as steering
+// Either axis also injects the shared core (standards/core.md): standing orders,
+// claims-are-earned, anti-sycophancy. Off means nothing is injected.
 //
 // Enforcement is deliberately small and soft (nothing blocks the model):
 //   - dependency installs get a decision-comment reminder appended to the tool result (steers, does not block)
-//   - typography in prose files is auto-fixed on disk (emoji, tight en-dash, curly quotes) with zero model tokens
+//   - pasted glyphs are auto-fixed on disk with zero model tokens: whole prose files, comment bodies in source files
 //   - AI-tells needing judgment (em-dash, vocabulary cluster) are appended to the model's own write result so it self-corrects the same turn: finding-only, capped per file, no advertised tool, and a passing scan is silent (never a "clean" signal to game)
 //   - opt-in: flag a run that changed logic but touched no test
 //
@@ -22,10 +24,10 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { CONFIG_DIR_NAME, getSettingsListTheme, type ExtensionAPI, type ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { Box, Container, Key, type SettingItem, SettingsList, Text } from "@earendil-works/pi-tui";
-import { cleanTypography } from "./lib/typography.ts";
+import { cleanSourceComments, cleanTypography, type GlyphTally } from "./lib/typography.ts";
 import { detectDependencyInstall } from "./lib/deps.ts";
 import { findTells, formatTells } from "./lib/tells.ts";
-import { clearGlobal, clearLocal, DEFAULT_MARKER, DEFAULT_MODE, type Mode, resolveConfig, writeGlobal, writeLocal } from "./lib/config.ts";
+import { clearGlobal, clearLocal, DEFAULT_MARKER, DEFAULT_MODE, type Mode, parseAxesSpec, resolveConfig, writeGlobal, writeLocal } from "./lib/config.ts";
 
 const baseDir = dirname(fileURLToPath(import.meta.url));
 
@@ -40,6 +42,7 @@ function readStandard(name: string): string {
     return "";
   }
 }
+const CORE = readStandard("core.md"); // the shared identity: injected whenever any standards axis is on
 const CODING = readStandard("coding.md");
 const WRITING = readStandard("writing.md");
 
@@ -62,16 +65,22 @@ type ActionKind = "typo" | "dep" | "tell" | "test";
 interface Action {
   kind: ActionKind;
   detail: string;
+  count?: number; // typo: glyphs fixed in this file (absent on entries from older sessions)
 }
 interface LogData {
   actions: Action[];
 }
 
+// One line for the run card and the run-end toast: what ran, with one number each.
 function summarize(actions: Action[]): string {
   const c: Record<ActionKind, number> = { typo: 0, dep: 0, tell: 0, test: 0 };
-  for (const a of actions) c[a.kind]++;
+  let glyphs = 0;
+  for (const a of actions) {
+    c[a.kind]++;
+    if (a.kind === "typo") glyphs += a.count ?? 1;
+  }
   const parts: string[] = [];
-  if (c.typo) parts.push(`${c.typo} typography fix${c.typo > 1 ? "es" : ""}`);
+  if (c.typo) parts.push(`${glyphs} glyph${glyphs > 1 ? "s" : ""} fixed`);
   if (c.dep) parts.push(`${c.dep} dependency flag${c.dep > 1 ? "s" : ""}`);
   if (c.tell) parts.push(`${c.tell} tell${c.tell > 1 ? "s" : ""} flagged`);
   if (c.test) parts.push("test gap");
@@ -82,7 +91,7 @@ function summarize(actions: Action[]): string {
 const HELP: string[] = [
   "greybeard: the least code that works, the least prose that informs.",
   "",
-  "Axes (toggle independently)",
+  "Axes (toggle independently; either standards axis also loads the shared core)",
   "  code    the coding ladder, build the least that works",
   "  prose   anti-slop writing standards + typography fixes",
   "  test    flag logic changed with no test touched",
@@ -96,6 +105,7 @@ const HELP: string[] = [
   "  /greybeard default                    save current settings as the global default",
   "  /greybeard reset [local|global|all]   drop a settings layer, re-resolve",
   "  /greybeard status                     current axes, prefix, session tally",
+  "  /greybeard stats                      session stats panel (glyphs, flags, tells)",
   "  /greybeard help                       this card",
   "  ctrl-alt-g                            flip greybeard on/off",
   "",
@@ -105,6 +115,14 @@ const HELP: string[] = [
 ];
 
 export default function greybeard(pi: ExtensionAPI): void {
+  // Per-invocation axes override, aimed at headless runs: `pi --greybeard code,prose ...`.
+  // Highest-precedence layer, never persisted, honored untrusted (an axes spec carries
+  // no free text into the model's instructions, unlike the decision prefix).
+  pi.registerFlag("greybeard", {
+    description: "Axes override for this invocation: off | on | comma list of code,prose,test",
+    type: "string",
+  });
+
   let mode: Mode = { ...DEFAULT_MODE };
   let marker = DEFAULT_MARKER;
   let lastCtx: ExtensionContext | undefined;
@@ -113,6 +131,7 @@ export default function greybeard(pi: ExtensionAPI): void {
   let hideStatus = false; // hand-edited config flag: keep greybeard active, hide the indicator
 
   // per-run state
+  let specError = false; // invalid --greybeard spec: session is shutting down, abort any turn that races it
   let active = false;
   let runLedger: Action[] = [];
   let touchedSource = false;
@@ -120,8 +139,13 @@ export default function greybeard(pi: ExtensionAPI): void {
   const tellFlags = new Map<string, number>(); // per-file tell-append count this run (TELL_CAP guard)
   let oneShotProse = false; // `/greybeard write`: run prose enforcement for this run without touching the axes
 
-  // session state
-  const totals = { typo: 0, dep: 0, tell: 0 };
+  // session state, memory only: totals for the status line, plus what the stats
+  // panel shows (glyphs by category, files cleaned, how many runs took action)
+  const totals = { typo: 0, dep: 0, tell: 0, test: 0 };
+  const glyphTotals: GlyphTally = {};
+  const cleanedFiles = new Set<string>();
+  let runs = 0;
+  let runsWithActions = 0;
 
   const axesLabel = () => [mode.code && "code", mode.prose && "prose"].filter(Boolean).join("+");
   const sessionLine = () => {
@@ -169,6 +193,7 @@ export default function greybeard(pi: ExtensionAPI): void {
   // -- steering: inject only the enabled axes, appended to the chained system prompt --
   pi.on("before_agent_start", (event) => {
     const blocks: string[] = [];
+    if ((mode.code || mode.prose) && CORE) blocks.push(CORE);
     if (mode.code && CODING) blocks.push(CODING.replace("{{marker_line}}", markerLine(marker)));
     if (mode.prose && WRITING) blocks.push(WRITING);
     if (!blocks.length) return;
@@ -185,6 +210,28 @@ export default function greybeard(pi: ExtensionAPI): void {
     mode = c.mode;
     marker = c.marker;
     hideStatus = c.hideStatus;
+    const spec = pi.getFlag("greybeard");
+    if (spec !== undefined) {
+      const parsed = typeof spec === "string" ? parseAxesSpec(spec) : undefined;
+      if (!parsed) {
+        // Kill the session, not just this handler: pi logs a thrown handler error
+        // and keeps running, which in a headless run would silently measure the
+        // wrong axes. Axes go dark, the turn (if one races the exit) gets aborted
+        // in agent_start, and the session shuts down.
+        specError = true;
+        mode = { code: false, prose: false, test: false };
+        const msg = `greybeard: invalid --greybeard spec "${String(spec)}" (off | on | comma list of code,prose,test); shutting down`;
+        console.error(msg);
+        try {
+          ctx.ui.notify(msg, "error");
+        } catch {
+          /* headless: stderr already has it */
+        }
+        ctx.shutdown();
+        return;
+      }
+      mode = parsed;
+    }
     active = false;
     runLedger = [];
     syncStatus(ctx);
@@ -197,7 +244,14 @@ export default function greybeard(pi: ExtensionAPI): void {
   });
 
   pi.on("agent_start", (_event, ctx) => {
+    if (specError) {
+      // Doomed session (invalid --greybeard spec): never let a racing turn reach the API.
+      ctx.abort();
+      ctx.shutdown();
+      return;
+    }
     active = true;
+    runs++;
     runLedger = [];
     touchedSource = false;
     touchedTest = false;
@@ -237,24 +291,37 @@ export default function greybeard(pi: ExtensionAPI): void {
     // tells that need judgment back into the model's own tool result so it self-corrects
     // this turn, before the user looks. Finding-only: a passing scan appends nothing, so
     // silence is never a "clean" signal. No advertised tool means no green light to game.
-    if ((mode.prose || oneShotProse) && isProse(path)) {
+    //
+    // A prose file is cleaned whole, outside its code spans. A source file is cleaned in
+    // its comment bodies only, because a glyph in a string literal or an identifier may
+    // be the point; that runs under either axis, since comments are a code artifact and
+    // the pasted-glyph rule does not stop at the file extension. The tells pass stays
+    // prose-only: it costs the model a turn, and it is the writing axis that asks for it.
+    const prose = isProse(path);
+    const writingOn = mode.prose || oneShotProse;
+    if (prose ? writingOn : writingOn || mode.code) {
       let content: string;
       try {
         content = readFileSync(path, "utf8");
       } catch {
         return undefined;
       }
-      const cleaned = cleanTypography(content);
+      const tally: GlyphTally = {};
+      const cleaned = prose ? cleanTypography(content, tally) : cleanSourceComments(content, path, tally);
       if (cleaned !== content) {
         try {
           writeFileSync(path, cleaned);
-          runLedger.push({ kind: "typo", detail: path });
+          const n = Object.values(tally).reduce((a, b) => a + b, 0);
+          runLedger.push({ kind: "typo", detail: path, count: n });
           totals.typo++;
+          for (const [k, v] of Object.entries(tally)) glyphTotals[k] = (glyphTotals[k] ?? 0) + v;
+          cleanedFiles.add(path);
           syncStatus(ctx);
         } catch {
           /* best effort; presentation only */
         }
       }
+      if (!prose) return undefined;
       const tells = findTells(cleaned);
       const flagged = tellFlags.get(path) ?? 0;
       if (tells.length && flagged < TELL_CAP) {
@@ -273,10 +340,23 @@ export default function greybeard(pi: ExtensionAPI): void {
     active = false;
 
     if (mode.test && touchedSource && !touchedTest) {
-      runLedger.push({ kind: "test", detail: "logic changed, no test touched (rung 9)" });
+      runLedger.push({ kind: "test", detail: "logic changed, no test touched (proof gate)" });
+      totals.test++;
     }
 
-    if (runLedger.length) pi.appendEntry<LogData>("greybeard-log", { actions: [...runLedger] });
+    if (runLedger.length) {
+      runsWithActions++;
+      pi.appendEntry<LogData>("greybeard-log", { actions: [...runLedger] });
+      // Run-end toast: one notify, only when something happened. Transient; the
+      // card above is the durable record.
+      if (ctx.hasUI) {
+        try {
+          ctx.ui.notify(`greybeard: ${summarize(runLedger)}`, "info");
+        } catch {
+          /* presentation only */
+        }
+      }
+    }
 
     oneShotProse = false; // the one-shot write's run is done
     syncStatus(ctx);
@@ -307,7 +387,7 @@ export default function greybeard(pi: ExtensionAPI): void {
   }
 
   pi.registerCommand("greybeard", {
-    description: "greybeard: no arg opens the panel; write <instructions> | code|prose|test [on|off] | on | off | prefix <text|none> | default | reset [local|global|all] | status | help",
+    description: "greybeard: no arg opens the panel; write <instructions> | code|prose|test [on|off] | on | off | prefix <text|none> | default | reset [local|global|all] | status | stats | help",
     handler: async (args, ctx) => {
       const raw = String(args || "").trim();
       const sub = raw.toLowerCase();
@@ -341,7 +421,16 @@ export default function greybeard(pi: ExtensionAPI): void {
         if (!WRITING) return ctx.ui.notify("greybeard: writing standards unavailable (standards/writing.md missing)", "error");
         const instructions = raw.slice(6).trim();
         if (!instructions) return ctx.ui.notify("greybeard: nothing to write; pass instructions after 'write'", "warning");
-        pi.sendUserMessage(`${WRITING}\n\nApply the writing standards above to this task:\n\n${instructions}`);
+        // Inject only what the session lacks: prose axis on = everything already in the
+        // system prompt; code axis on = core is there, add writing; all off = add both.
+        const std = mode.prose ? [] : mode.code ? [WRITING] : [CORE, WRITING];
+        const blocks = std.filter(Boolean);
+        oneShotProse = true; // arm prose enforcement for this run without touching the axes
+        pi.sendUserMessage(
+          blocks.length
+            ? `${blocks.join("\n\n")}\n\nApply the writing standards above to this task:\n\n${instructions}`
+            : `Apply the writing standards to this task:\n\n${instructions}`,
+        );
         return ctx.ui.notify("greybeard: writing to the standards\u2026", "info");
       }
 
@@ -379,6 +468,42 @@ export default function greybeard(pi: ExtensionAPI): void {
         marker = c.marker;
         syncStatus(ctx);
         return report();
+      }
+
+      // Session stats: what the enforcement did since the session started. Memory
+      // only, an overlay, not an entry: it advances nothing and persists nowhere.
+      if (sub === "stats") {
+        const glyphs = Object.values(glyphTotals).reduce((a, b) => a + b, 0);
+        const cats = [
+          ["substituted", "substituted"],
+          ["emoji", "emoji removed"],
+          ["invisible", "invisible marks"],
+          ["space", "spaces normalized"],
+        ] as const;
+        const breakdown = cats
+          .filter(([k]) => glyphTotals[k])
+          .map(([k, label]) => `${glyphTotals[k]} ${label}`)
+          .join(", ");
+        const lines: string[] = [];
+        if (glyphs) lines.push(`glyph fixes       ${glyphs} in ${cleanedFiles.size} file${cleanedFiles.size > 1 ? "s" : ""} (${breakdown})`);
+        if (totals.dep) lines.push(`dependency flags  ${totals.dep}`);
+        if (totals.tell) lines.push(`tells flagged     ${totals.tell}`);
+        if (totals.test) lines.push(`test gaps         ${totals.test}`);
+        if (lines.length) lines.push(`runs              ${runsWithActions} of ${runs} took action`);
+        else lines.push("no enforcement actions this session");
+        if (ctx.mode !== "tui") return ctx.ui.notify(`greybeard stats\n${lines.join("\n")}`, "info");
+        await ctx.ui.custom((_tui, theme, _kb, done) => {
+          const c = new Container();
+          c.addChild(new Text(`${GLYPH} ${theme.fg("accent", theme.bold("greybeard"))} ${theme.fg("muted", "session stats")}`, 1, 1));
+          for (const line of lines) c.addChild(new Text(theme.fg("text", `  ${line}`), 0, 0));
+          c.addChild(new Text(theme.fg("dim", "press any key to close"), 1, 0));
+          return {
+            render: (w) => c.render(w),
+            invalidate: () => c.invalidate(),
+            handleInput: () => done(undefined),
+          };
+        });
+        return;
       }
 
       if (sub === "status") return report();

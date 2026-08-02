@@ -72,6 +72,24 @@ function readPartial(path: string): Partial_ {
   }
 }
 
+// Parse a `--greybeard <spec>` CLI override: "off", "on" (both axes, matching
+// the command), or a comma list of axis names. Returns undefined on anything
+// else so the caller can fail loudly; a silently misread spec is exactly the
+// misconfiguration class the flag exists to remove.
+export function parseAxesSpec(spec: string): Mode | undefined {
+  const s = spec.trim().toLowerCase();
+  if (!s) return undefined;
+  if (s === "off") return { code: false, prose: false, test: false };
+  if (s === "on") return { code: true, prose: true, test: false };
+  const mode: Mode = { code: false, prose: false, test: false };
+  for (const part of s.split(",")) {
+    const key = part.trim();
+    if (key !== "code" && key !== "prose" && key !== "test") return undefined;
+    mode[key] = true;
+  }
+  return mode;
+}
+
 export function resolveConfig(cwd: string | undefined, trusted: boolean, configDir: string): Resolved {
   const g = readPartial(globalConfigPath());
   const l = trusted && cwd ? readPartial(localConfigPath(cwd, configDir)) : {};

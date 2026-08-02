@@ -39,29 +39,35 @@ With greybeard, the same model on the same task, the heart of a +7 line diff:
 
 Both pass every check, every run. Sonnet 5 went +48 to +10 the same way.
 
-The bottom rung of the ladder is "does this need to exist?" Handed a caching bug, every model fixed the code. With greybeard, DeepSeek v4 pro *deleted* the cache instead:
+#### "Does this need to exist?"
+
+Unless explicitly asked, LLMs *never* delete code. They remove, modify, refit old code lines sure, but the concept of deleting code to make something work is not something easily found.
+
+Handed a caching bug, every model fixed the code. With greybeard, DeepSeek v4 pro *deleted* the cache instead.
 
 ```diff
 diff --git a/cache.js b/cache.js
 deleted file mode 100644
---- a/cache.js
-+++ /dev/null
+- a/cache.js
++ /dev/null
 ```
 
 Both ways fix the bug. But models do not delete code. Only greybeard makes them.
 
 ### prose (`standards/writing.md`)
 
-*Greybeard writes the least prose that informs.* Least never means *disjointed*. Text shortened to the point of sparse words is a greater cognitive load than a well used short sentence. Text that reads like AI-slop completely removes trust in the thing that is being read. Greybeard addresses that. No emoji, excessive symbol usage, performative enthusiasm.
+*Greybeard writes the least prose that informs.* Least never means *disjointed*. Text shortened to the point of sparse words is a greater cognitive load than a well used short sentence. Not to mention, LLM text is prone to bloviating, and reads like... slop. Plain and simple.
+
+Text that reads like AI-slop completely removes trust in the thing that is being read. Greybeard addresses that. No emoji, excessive symbol usage, performative enthusiasm.
 
 The task: write the README for a small file-scanning tool, given nothing but its source. Both models describe the same tool; row by row, the same fact.
 
 | Unsteered, Haiku 4.5 | With greybeard, the same model |
 |---|---|
-| **Fast scanning** with automatic pruning of common non-essential directories | Skips `.git`, `.hg`, `.svn`, `node_modules`, `__pycache__`, `.venv` (these are slow and never the target) |
-| **Sorted output** by file size (largest first) | Prints every file over 1 MB, one per line, largest first. Format is size then path. |
-| **Robust error handling** for symlinks, inaccessible files, and race conditions | Ignores symlinks. Recovers gracefully if files are deleted or become unreadable mid-walk. |
-| **Clean output** that's pipeable for further processing<br>**Summary statistics** sent to stderr to preserve stdout for piping | Summary (file count, total size) goes to stderr so the list stays pipeable. |
+| "**Fast scanning** with automatic pruning of common non-essential directories" | "Skips `.git`, `.hg`, `.svn`, `node_modules`, `__pycache__`, `.venv` (these are slow and never the target)" |
+| "**Sorted output** by file size (largest first)" | "Prints every file over 1 MB, one per line, largest first. Format is size then path." |
+| "**Robust error handling** for symlinks, inaccessible files, and race conditions" | "Ignores symlinks. Recovers gracefully if files are deleted or become unreadable mid-walk." |
+| "**Clean output** that's pipeable for further processing<br>**Summary statistics** sent to stderr to preserve stdout for piping" | "Summary (file count, total size) goes to stderr so the list stays pipeable." |
 
 The full READMEs: 393 words unsteered, 128 with greybeard, covering the same tool. The difference is what the standard removes: filler adjectives, padded sections, enthusiasm without content.
 
@@ -72,7 +78,7 @@ The rules are the voice in the room. This is what the hands do.
 |   |
 |---|
 | **A `bash` command just installed a dependency. Now what?**<br>A reminder that a new dependency is a design decision worth a justifying comment. Covers most package managers (13, in `lib/deps.ts`): npm, pip, poetry, uv, cargo, go, vcpkg, dotnet, and more. |
-| **The model wrote a prose file. Emoji, curly quotes, the usual. Who cleans up?**<br>greybeard does, on disk, silently: emoji, tight en-dashes, curly quotes. Safe fixes only, no round trip through the model, no tokens spent. |
+| **The model pasted glyphs. Curly quotes, arrows, emoji, invisible spaces. Who cleans up?**<br>greybeard does, on disk, silently: every glyph with a keyboard spelling gets it (`->` for the arrow, `<=` for the comparison, straight quotes, `...` for the ellipsis), emoji and zero-width marks go, exotic spaces collapse. Whole file for prose, comment bodies only for source, so a glyph inside a string literal survives. Safe fixes only, no round trip through the model, no tokens spent. |
 | **A sentence reads like a machine wrote it. Then what?**<br>The offending sentences (em-dash, cluster vocabulary) come back appended to the model's own write result, so it self-corrects in the same turn. Finding-only and capped; a clean scan says nothing. |
 | **Source changed, but no test did.**<br>The run gets flagged at the end. This one stays quiet until you turn it on. |
 
@@ -80,7 +86,17 @@ Around all that: a statusline, a card summing up each run, a toggle panel, and
 `ctrl-alt-g` to flip everything on and off.
 
 ## Benchmarks
-[Coming soon!](https://github.com/grainologic/greybeard)
+
+Greybeard has been tested. An A/B harness runs each task twice on the same model, once bare, once with greybeard loaded. Same prompts, same checks. Five reps per arm, eight models, three providers. The suite and every result set live at [grainologic/greybeard-benchmarks](https://github.com/grainologic/greybeard-benchmarks).
+
+The averages, at the same pass rate:
+
+- **0.5x the code.** Or better, across the open-ended tasks. The models that build the most unasked came down 4x.
+- **0.75x the output tokens.** The chattiest model in the roster came down 3x.
+- **0.5x the words.** Same tool documented. Every output was scored for slop. Machine tells fell to a median of 0, even the ones the standards never name. The model learns the register, not a list. Accuracy went from 78% to 90%.
+- **Sooner.** The models that write the most before deciding finished 2.5x faster.
+
+The averages hide two things. Every deletion in the section above happened with greybeard on. No bare model ever subtracted. And nobody lied about a red build, either way. Greybeard led with the bad news. The bare models put a cheerful line first.
 
 ## Install
 
@@ -103,8 +119,8 @@ Or try it for one run without installing:
 pi -e npm:pi-greybeard
 ```
 
-Editing `standards/coding.md` or `standards/writing.md` and running `/reload`
-changes the persona with no code change. The markdown is the config.
+Editing `standards/core.md`, `standards/coding.md`, or `standards/writing.md` and
+running `/reload` changes the persona with no code change. The markdown is the config.
 
 ## Telling it what to do
 
@@ -118,6 +134,7 @@ changes the persona with no code change. The markdown is the config.
 | `/greybeard default` | Promote the current settings to the global default |
 | `/greybeard reset [local\|global\|all]` | Drop a settings layer (default `local`) and re-resolve |
 | `/greybeard status` | Report current axes, prefix, and session tally |
+| `/greybeard stats` | Session stats panel: glyphs fixed by category, dependency flags, tells, test gaps |
 | `/greybeard help` | Print the command reference card |
 | `ctrl-alt-g` | Flip greybeard on/off |
 
@@ -171,6 +188,6 @@ node --test --experimental-strip-types 'test/*.selfcheck.ts'
 
 Layout: `index.ts` is the pi entry (the only file that touches the pi API and
 must sit at the extension root for auto-discovery). `lib/` holds the pure,
-pi-free logic (`config.ts`, `deps.ts`, `typography.ts`, `tells.ts`), which is why it runs
+pi-free logic (`config.ts`, `deps.ts`, `typography.ts`, `comments.ts`, `tells.ts`), which is why it runs
 under a bare Node. `test/` holds the self-checks, `standards/` the rules it
 applies, `skills/` the on-demand review and audit passes.
