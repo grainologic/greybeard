@@ -39,29 +39,35 @@ With greybeard, the same model on the same task, the heart of a +7 line diff:
 
 Both pass every check, every run. Sonnet 5 went +48 to +10 the same way.
 
-The bottom rung of the ladder is "does this need to exist?" Handed a caching bug, every model fixed the code. With greybeard, DeepSeek v4 pro *deleted* the cache instead:
+#### "Does this need to exist?"
+
+Unless explicitly asked, LLMs *never* delete code. They remove, modify, refit old code lines sure, but the concept of deleting code to make something work is not something easily found.
+
+Handed a caching bug, every model fixed the code. With greybeard, DeepSeek v4 pro *deleted* the cache instead.
 
 ```diff
 diff --git a/cache.js b/cache.js
 deleted file mode 100644
---- a/cache.js
-+++ /dev/null
+- a/cache.js
++ /dev/null
 ```
 
 Both ways fix the bug. But models do not delete code. Only greybeard makes them.
 
 ### prose (`standards/writing.md`)
 
-*Greybeard writes the least prose that informs.* Least never means *disjointed*. Text shortened to the point of sparse words is a greater cognitive load than a well used short sentence. Text that reads like AI-slop completely removes trust in the thing that is being read. Greybeard addresses that. No emoji, excessive symbol usage, performative enthusiasm.
+*Greybeard writes the least prose that informs.* Least never means *disjointed*. Text shortened to the point of sparse words is a greater cognitive load than a well used short sentence. Not to mention, LLM text is prone to bloviating, and reads like... slop. Plain and simple.
+
+Text that reads like AI-slop completely removes trust in the thing that is being read. Greybeard addresses that. No emoji, excessive symbol usage, performative enthusiasm.
 
 The task: write the README for a small file-scanning tool, given nothing but its source. Both models describe the same tool; row by row, the same fact.
 
 | Unsteered, Haiku 4.5 | With greybeard, the same model |
 |---|---|
-| **Fast scanning** with automatic pruning of common non-essential directories | Skips `.git`, `.hg`, `.svn`, `node_modules`, `__pycache__`, `.venv` (these are slow and never the target) |
-| **Sorted output** by file size (largest first) | Prints every file over 1 MB, one per line, largest first. Format is size then path. |
-| **Robust error handling** for symlinks, inaccessible files, and race conditions | Ignores symlinks. Recovers gracefully if files are deleted or become unreadable mid-walk. |
-| **Clean output** that's pipeable for further processing<br>**Summary statistics** sent to stderr to preserve stdout for piping | Summary (file count, total size) goes to stderr so the list stays pipeable. |
+| "**Fast scanning** with automatic pruning of common non-essential directories" | "Skips `.git`, `.hg`, `.svn`, `node_modules`, `__pycache__`, `.venv` (these are slow and never the target)" |
+| "**Sorted output** by file size (largest first)" | "Prints every file over 1 MB, one per line, largest first. Format is size then path." |
+| "**Robust error handling** for symlinks, inaccessible files, and race conditions" | "Ignores symlinks. Recovers gracefully if files are deleted or become unreadable mid-walk." |
+| "**Clean output** that's pipeable for further processing<br>**Summary statistics** sent to stderr to preserve stdout for piping" | "Summary (file count, total size) goes to stderr so the list stays pipeable." |
 
 The full READMEs: 393 words unsteered, 128 with greybeard, covering the same tool. The difference is what the standard removes: filler adjectives, padded sections, enthusiasm without content.
 
