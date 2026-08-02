@@ -21,6 +21,7 @@
   "files": [
     "index.ts",
     "lib/",
+    "resources/",
     "standards/",
     "skills/",
     "README.md",
