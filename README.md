@@ -81,6 +81,8 @@ The rules are the voice in the room. This is what the hands do.
 | **The model pasted glyphs. Curly quotes, arrows, emoji, invisible spaces. Who cleans up?**<br>greybeard does, on disk, silently: every glyph with a keyboard spelling gets it (`->` for the arrow, `<=` for the comparison, straight quotes, `...` for the ellipsis), emoji and zero-width marks go, exotic spaces collapse. Whole file for prose, comment bodies only for source, so a glyph inside a string literal survives. Safe fixes only, no round trip through the model, no tokens spent. |
 | **A sentence reads like a machine wrote it. Then what?**<br>The offending sentences (em-dash, cluster vocabulary) come back appended to the model's own write result, so it self-corrects in the same turn. Finding-only and capped; a clean scan says nothing. |
 | **Source changed, but no test did.**<br>The run gets flagged at the end. This one stays quiet until you turn it on. |
+| **Three tries at the same file, every one failing. Now what?**<br>The third failure against one target comes back on the failing tool result: the approach is spent, say what the failures prove, then take a different route or report the block. It fires again at six, then stops. Anchored on the target rather than the command, because a dead end keeps the file and swaps the tool around it. |
+| **The model just opened its first Python file.**<br>Five things a senior engineer would not write in that language, once per session, from `standards/lang/`. Twenty-two languages, and a language is added by writing its markdown. |
 
 Around all that: a statusline, a card summing up each run, a toggle panel, and
 `ctrl-alt-g` to flip everything on and off.
@@ -119,8 +121,9 @@ Or try it for one run without installing:
 pi -e npm:pi-greybeard
 ```
 
-Editing `standards/core.md`, `standards/coding.md`, or `standards/writing.md` and
-running `/reload` changes the persona with no code change. The markdown is the config.
+Editing `standards/core.md`, `standards/coding.md`, `standards/writing.md`, or any
+file in `standards/lang/` and running `/reload` changes the persona with no code
+change. The markdown is the config.
 
 ## Telling it what to do
 
@@ -188,6 +191,7 @@ node --test --experimental-strip-types 'test/*.selfcheck.ts'
 
 Layout: `index.ts` is the pi entry (the only file that touches the pi API and
 must sit at the extension root for auto-discovery). `lib/` holds the pure,
-pi-free logic (`config.ts`, `deps.ts`, `typography.ts`, `comments.ts`, `tells.ts`), which is why it runs
-under a bare Node. `test/` holds the self-checks, `standards/` the rules it
-applies, `skills/` the on-demand review and audit passes.
+pi-free logic (`config.ts`, `deps.ts`, `typography.ts`, `comments.ts`, `tells.ts`,
+`churn.ts`, `languages.ts`), which is why it runs under a bare Node. `test/` holds
+the self-checks, `standards/` the rules it applies with `standards/lang/` the
+per-language examples, `skills/` the on-demand review and audit passes.
