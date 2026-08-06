@@ -1,0 +1,5 @@
+- `.clone()` to quiet the borrow checker is a decision, not a fix. Try a reference or a narrower scope first.
+- `unwrap()` outside tests is a panic you have scheduled. `?` propagates and costs one character.
+- A trait with one implementor is a struct. Traits pay at the second implementor or a generic bound.
+- Take `&str` and `&[T]` in arguments. `String` and `Vec<T>` are for when you keep it.
+- Iterator chains replace index loops and their bounds checks. `collect()` only when a caller needs the collection.

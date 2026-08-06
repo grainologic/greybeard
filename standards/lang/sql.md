@@ -1,0 +1,5 @@
+- `SELECT *` in application code breaks on the next migration. Name the columns you use.
+- `NOT IN` against a nullable column returns nothing at all. `NOT EXISTS` is the form that survives a null.
+- Filtering in application code what the database can filter is a table scan sent over the network.
+- A unique constraint enforces what check-then-insert cannot, because two connections check at the same time.
+- A correlated subquery in the select list is usually a join. Read the plan before accepting either.

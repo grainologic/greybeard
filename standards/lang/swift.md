@@ -1,0 +1,5 @@
+- A `class` where a `struct` works trades value semantics away for nothing.
+- `guard let` at the top keeps the happy path at one indent. Nested `if let` is the same logic pushed rightward.
+- Force unwrapping is a crash you have chosen. `guard`, `??`, or optional chaining says what you meant.
+- A protocol with one conformer is indirection. Protocols pay at the second conformer or a generic constraint.
+- `Codable` replaces hand-written JSON parsing, nested types included.

@@ -1,0 +1,5 @@
+- Vectorized operations replace the `for` loop, and the `apply` family replaces what is left.
+- Growing a vector inside a loop reallocates every iteration. Preallocate, or use `vapply` and let it size the result.
+- `seq_along(x)` over `1:length(x)`, which counts down from 1 to 0 when `x` is empty.
+- `vapply` over `sapply` when the result type matters, because `sapply` silently changes shape.
+- `<-` assigns and `=` names arguments. Mixing them reads as a bug to everyone who did not write it.

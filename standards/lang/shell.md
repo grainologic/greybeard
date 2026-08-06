@@ -1,0 +1,5 @@
+- `set -euo pipefail` at the top turns silent failure into a stop.
+- Quote every expansion: `"$var"`, `"$@"`. An unquoted variable splits on spaces the day a path has one.
+- Parsing `ls` breaks on the first odd filename. Use a glob, or `find -print0` with `read -r -d ''`.
+- `[[ ]]` over `[ ]` in bash, and `$( )` over backticks, which do not nest.
+- A script past a hundred lines with arrays and arithmetic has become a Python script that has not admitted it.

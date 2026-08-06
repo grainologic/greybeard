@@ -1,0 +1,5 @@
+- Every allocation has one owner. Name it in a comment at the `malloc`, or free it in the same function.
+- `strncpy` does not guarantee a terminator and `strcat` does not check room. `snprintf` does both.
+- A pointer to a local outlives nothing. Return by value, or take an out-parameter the caller owns.
+- `static` on a file-local function and variable is free namespacing, and it lets the compiler see more.
+- Check the return of `malloc`, `fopen`, and every write. The failure you do not check is the one that corrupts.

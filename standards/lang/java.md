@@ -1,0 +1,5 @@
+- A class that is only fields with getters is a `record`, which brings equality and `toString` with it.
+- An interface with one implementation and no test double is indirection. Let the class be the type.
+- `Optional` is a return type. As a field or a parameter it adds a null case instead of removing one.
+- `try`-with-resources replaces the `finally` block whose only job is closing.
+- A stream that filters and collects earns its place; a stream that only iterates is a `for` loop wearing a costume.

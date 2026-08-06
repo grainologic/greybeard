@@ -1,0 +1,5 @@
+- A `StatefulWidget` whose state is never mutated is a `StatelessWidget`.
+- `const` constructors let the framework skip rebuilds. They cost nothing to write and compound down the tree.
+- `late` is a promise to the compiler that you will assign before reading. A nullable field with a check is the honest version.
+- Cascades with `..` remove the local variable that exists only to be configured.
+- `Iterable` methods are lazy. `toList()` when a caller needs a list, not to end every chain.

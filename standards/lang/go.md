@@ -1,0 +1,5 @@
+- A goroutine you cannot stop is a leak. Take a `context.Context` and select on `ctx.Done()`.
+- Interfaces are declared where they are consumed, not beside their only implementation. One implementor means you wanted a struct.
+- `if err != nil { return fmt.Errorf("doing x: %w", err) }` is the whole strategy. A custom error type earns its place when a caller branches on it.
+- A struct with only getters and setters is a struct with exported fields.
+- `defer` runs at function exit, not loop-iteration exit. A `defer` inside a loop wants its body extracted into a function.

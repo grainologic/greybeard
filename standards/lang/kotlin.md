@@ -1,0 +1,5 @@
+- `data class` replaces hand-written equals, hashCode, toString, and the copy constructor.
+- `!!` is a design decision postponed. Make the type non-null, or handle the null where it appears.
+- `apply`, `let`, `also`, and `run` each do one thing. Three of them chained is a puzzle for the next reader.
+- Extension functions replace the `Utils` object, which is a namespace nobody owns.
+- A `sealed` hierarchy plus `when` makes the compiler prove exhaustiveness, so the `else` branch comes out.

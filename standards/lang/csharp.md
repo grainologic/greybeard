@@ -1,0 +1,5 @@
+- A type that is only data is a `record`, which brings value equality and `with` expressions with it.
+- LINQ replaces the loop that filters and projects. A loop that mutates stays a loop.
+- `using` declarations replace the `try/finally` whose only job is disposal.
+- An interface with one implementation and no mock is indirection.
+- `async void` throws where nobody can catch it. Return `Task` unless it is an event handler.

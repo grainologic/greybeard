@@ -1,0 +1,5 @@
+- Point-free until it stops reading. A named argument beats a composition nobody can trace.
+- A typeclass with one instance is a function with extra ceremony.
+- `Data.Map` past a handful of entries. An association list is a linear scan wearing a nice interface.
+- `foldl'` over `foldl`, because the lazy accumulator builds a thunk chain the size of the input.
+- `where` for function-local helpers keeps the signature at the top where a reader looks first.

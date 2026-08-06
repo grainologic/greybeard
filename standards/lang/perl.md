@@ -1,0 +1,5 @@
+- `use strict; use warnings;` at the top of every file, without exception.
+- Three-argument `open` with a lexical filehandle. The two-argument form takes a filename that can carry a mode.
+- `grep` and `map` replace the loop that filters and transforms.
+- `my` scoping throughout. A package variable is a global that has learned to hide.
+- A regex worth a comment is a regex worth `/x` and named captures, which put the explanation inside the pattern.

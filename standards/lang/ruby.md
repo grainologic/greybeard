@@ -1,0 +1,5 @@
+- A class that is only class methods is a module.
+- `each` that builds an array is `map`; `each` that picks is `select`. `each_with_object` is the fallback, not the default.
+- When the class is data, `Struct` or `Data.define` replaces the whole file.
+- `&:symbol` replaces the block that only calls one method.
+- `fetch` with a default replaces `[]` followed by a nil check, and it raises where a typo would otherwise return nil.

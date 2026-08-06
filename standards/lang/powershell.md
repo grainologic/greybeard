@@ -1,0 +1,5 @@
+- Objects flow down the pipeline and `Format-*` ends it. A formatted object piped into logic is no longer the object.
+- `Where-Object` and `ForEach-Object` replace the loop that filters and projects.
+- `-ErrorAction Stop` is what makes a non-terminating error reach your `catch`. Without it the `try` is decoration.
+- Splatting a hashtable replaces the seven-parameter call and the backtick continuations holding it together.
+- Put `$null` on the left: `if ($null -eq $x)`. On the right it compares element-wise against an array.

@@ -1,0 +1,5 @@
+- `local` on every variable. A missing `local` writes into the global table and stays there.
+- Building a string in a loop is quadratic. Collect the pieces and `table.concat` once.
+- `ipairs` stops at the first nil and `pairs` has no order. Choosing between them is choosing your semantics.
+- Metatables give inheritance directly. A class library imported for one type does not earn its place.
+- Indices start at 1, and `#t` on a table with holes is undefined rather than merely surprising.

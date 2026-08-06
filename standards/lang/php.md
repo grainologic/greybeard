@@ -1,0 +1,5 @@
+- `array_map` and `array_filter` replace the foreach whose only job is building an array.
+- Constructor property promotion with typed properties replaces the constructor that only assigns.
+- `??` and `?->` replace the `isset()` ladder.
+- An interface with one implementation is indirection. Test doubles do not need it.
+- `readonly` on a value object replaces private fields plus getters, and states the intent the getters only implied.

@@ -1,0 +1,5 @@
+- Pattern matching in the function head replaces the `if` at the top of the body, and the compiler checks the clauses.
+- `with` replaces the nest of case statements over `{:ok, _}` tuples.
+- A GenServer holds state that one process owns. A GenServer used to organize code is a mailbox nobody needed.
+- A pipeline reads top to bottom. One that needs a comment is two functions with names.
+- Let it crash: a supervisor restart beats a `rescue` that guesses at a state it cannot see.

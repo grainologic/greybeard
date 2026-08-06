@@ -1,0 +1,5 @@
+- `case class` replaces equals, hashCode, toString, and the companion `apply` you were about to write.
+- `Option` chaining replaces the null-check ladder, and `getOrElse` ends it in one place.
+- Past two levels of nested `flatMap`, a `for` comprehension is the same code that someone can read.
+- An implicit that is not a typeclass instance is action at a distance. Pass it.
+- `var` inside a method is fine. `var` in a public API hands out a race.

@@ -1,0 +1,5 @@
+- Raw `new` and `delete` is `unique_ptr`. `shared_ptr` is for shared ownership, not for avoiding the question.
+- Take `const&` for anything bigger than a pointer. Take by value only when you move it.
+- A class whose members are all public with getters and setters is a struct you have hidden.
+- Range-for and the standard algorithms replace index loops and their off-by-ones.
+- `enum class` over plain `enum`, so the compiler rejects the comparison you did not mean to write.
