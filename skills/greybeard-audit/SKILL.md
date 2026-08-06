@@ -9,7 +9,7 @@ Scan the whole repository against `../../standards/core.md`, `../../standards/co
 
 ## What to hunt
 
-- **Reinvented wheels:** code the stdlib, platform, or an already-installed dependency covers (rungs 3-5).
+- **Reinvented wheels:** code the stdlib, platform, or an already-installed dependency covers (rungs 4-6).
 - **Speculative generality:** interfaces with one implementation, factories for one product, config for constants, dead flexibility nothing calls.
 - **Deletable surface:** files, exports, options, and branches with no live caller. A net-negative diff is the best diff.
 - **Unjustified dependencies:** entries in the manifest with no use site, or heavy dependencies pulled in for a few lines.

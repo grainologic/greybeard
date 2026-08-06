@@ -5,7 +5,7 @@ description: Harvest greybeard's decision comments into a ledger, so the choices
 
 # greybeard-ledger
 
-Greybeard marks every non-obvious ladder decision with a decision comment (coding standard, rule 7): a new dependency over stdlib, reuse over rewrite, or a corner cut with a named ceiling. This collects them into one ledger so a deferral cannot quietly become permanent and a rationale is not lost.
+Greybeard marks every non-obvious ladder decision with a decision comment (coding standards, "comment every non-obvious ladder decision"): a new dependency over stdlib, reuse over rewrite, or a corner cut with a named ceiling. This collects them into one ledger so a deferral cannot quietly become permanent and a rationale is not lost.
 
 ## Find the marker
 
