@@ -10,7 +10,11 @@
 //   - dependency installs get a decision-comment reminder appended to the tool result (steers, does not block)
 //   - pasted glyphs are auto-fixed on disk with zero model tokens: whole prose files, comment bodies in source files
 //   - AI-tells needing judgment (em-dash, vocabulary cluster) are appended to the model's own write result so it self-corrects the same turn: finding-only, capped per file, no advertised tool, and a passing scan is silent (never a "clean" signal to game)
+//   - a third failed call against one target gets a note saying the approach is spent (lib/churn.ts)
+//   - the first file of a language gets that language's examples once per session (standards/lang/)
 //   - opt-in: flag a run that changed logic but touched no test
+//
+// Notes ride tool results, the tail of the conversation, so they cost no cached prefix.
 //
 // Settings live in two lazily-created files (config.ts): a project-local
 // `.pi/greybeard.json` that every toggle writes and a subagent spawned here
@@ -24,6 +28,8 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { CONFIG_DIR_NAME, getSettingsListTheme, type ExtensionAPI, type ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { Box, Container, Key, type SettingItem, SettingsList, Text } from "@earendil-works/pi-tui";
+import { type ChurnState, formatChurn, recordFailure, signature } from "./lib/churn.ts";
+import { languageFor } from "./lib/languages.ts";
 import { cleanSourceComments, cleanTypography, type GlyphTally } from "./lib/typography.ts";
 import { detectDependencyInstall } from "./lib/deps.ts";
 import { findTells, formatTells } from "./lib/tells.ts";
@@ -61,7 +67,7 @@ const TELL_CAP = 3;
 const isProse = (p: string) => PROSE.test(p) || /COMMIT_EDITMSG$/.test(p);
 const isTest = (p: string) => TEST.test(p);
 
-type ActionKind = "typo" | "dep" | "tell" | "test";
+type ActionKind = "typo" | "dep" | "tell" | "test" | "churn" | "lang";
 interface Action {
   kind: ActionKind;
   detail: string;
@@ -73,7 +79,7 @@ interface LogData {
 
 // One line for the run card and the run-end toast: what ran, with one number each.
 function summarize(actions: Action[]): string {
-  const c: Record<ActionKind, number> = { typo: 0, dep: 0, tell: 0, test: 0 };
+  const c: Record<ActionKind, number> = { typo: 0, dep: 0, tell: 0, test: 0, churn: 0, lang: 0 };
   let glyphs = 0;
   for (const a of actions) {
     c[a.kind]++;
@@ -83,6 +89,8 @@ function summarize(actions: Action[]): string {
   if (c.typo) parts.push(`${glyphs} glyph${glyphs > 1 ? "s" : ""} fixed`);
   if (c.dep) parts.push(`${c.dep} dependency flag${c.dep > 1 ? "s" : ""}`);
   if (c.tell) parts.push(`${c.tell} tell${c.tell > 1 ? "s" : ""} flagged`);
+  if (c.churn) parts.push(`${c.churn} dead-end flag${c.churn > 1 ? "s" : ""}`);
+  if (c.lang) parts.push(`${c.lang} language note${c.lang > 1 ? "s" : ""}`);
   if (c.test) parts.push("test gap");
   return parts.join(", ");
 }
@@ -137,11 +145,36 @@ export default function greybeard(pi: ExtensionAPI): void {
   let touchedSource = false;
   let touchedTest = false;
   const tellFlags = new Map<string, number>(); // per-file tell-append count this run (TELL_CAP guard)
+  const churnState: ChurnState = new Map(); // per-target failure counts this run
   let oneShotProse = false; // `/greybeard write`: run prose enforcement for this run without touching the axes
 
   // session state, memory only: totals for the status line, plus what the stats
   // panel shows (glyphs by category, files cleaned, how many runs took action)
-  const totals = { typo: 0, dep: 0, tell: 0, test: 0 };
+  const totals = { typo: 0, dep: 0, tell: 0, test: 0, churn: 0, lang: 0 };
+  const langBody = new Map<string, string>(); // slug -> notes, "" when the file is absent
+  const langFired = new Set<string>(); // one note per language per session
+
+  // The notes for the language of this file, or nothing: no file, or already sent.
+  // Read on first use so adding standards/lang/<slug>.md needs no code change.
+  function languageNote(path: string): string | undefined {
+    const slug = languageFor(path);
+    if (!slug || langFired.has(slug)) return undefined;
+    let body = langBody.get(slug);
+    if (body === undefined) {
+      try {
+        body = readFileSync(join(baseDir, "standards", "lang", `${slug}.md`), "utf8").trim();
+      } catch {
+        body = "";
+      }
+      langBody.set(slug, body);
+    }
+    if (!body) return undefined;
+    langFired.add(slug);
+    // Scoped flatly, not conditionally: without this line the equivalences read as
+    // rewrite orders and contradict "do not convert", and a conditional qualifier
+    // is the form small models drop first.
+    return `greybeard: ${slug} examples. They apply to code you are about to write. Working code that already does the job stays as it is.\n${body}`;
+  }
   const glyphTotals: GlyphTally = {};
   const cleanedFiles = new Set<string>();
   let runs = 0;
@@ -153,6 +186,7 @@ export default function greybeard(pi: ExtensionAPI): void {
     if (totals.typo) p.push(`${totals.typo} fixes`);
     if (totals.dep) p.push(`${totals.dep} flags`);
     if (totals.tell) p.push(`${totals.tell} tells`);
+    if (totals.churn) p.push(`${totals.churn} dead ends`);
     return p.length ? p.join(", ") : "no actions yet";
   };
 
@@ -237,6 +271,9 @@ export default function greybeard(pi: ExtensionAPI): void {
     syncStatus(ctx);
   });
 
+  // Compaction can drop the note out of context, so let it be sent again.
+  pi.on("session_compact", () => langFired.clear());
+
   pi.on("input", (event) => {
     if (event.source !== "extension") {
       oneShotProse = false; // a real prompt ends any pending one-shot write
@@ -256,13 +293,24 @@ export default function greybeard(pi: ExtensionAPI): void {
     touchedSource = false;
     touchedTest = false;
     tellFlags.clear();
+    churnState.clear();
     syncStatus(ctx);
   });
 
   // -- enforcement, all soft --
   pi.on("tool_result", (event, ctx) => {
-    if (event.isError) return undefined;
     const input = event.input as { path?: string; command?: string };
+
+    // Failures are handled here; every pass below runs on successful results only.
+    if (event.isError) {
+      if (!mode.code && !mode.prose) return undefined;
+      const verdict = recordFailure(churnState, signature(event.toolName, input), (input.command ?? "").length);
+      if (!verdict) return undefined;
+      runLedger.push({ kind: "churn", detail: `${verdict.failures} failures on ${verdict.target}` });
+      totals.churn++;
+      syncStatus(ctx);
+      return { content: [...event.content, { type: "text" as const, text: formatChurn(verdict) }] };
+    }
 
     // coding: dependency reminder (steers via appended note, never blocks)
     if (mode.code && event.toolName === "bash" && detectDependencyInstall(input.command ?? "")) {
@@ -274,14 +322,30 @@ export default function greybeard(pi: ExtensionAPI): void {
           ...event.content,
           {
             type: "text" as const,
-            text: `greybeard: rung 5, a new dependency is a design decision. Leave a comment${marker ? ` prefixed \`${marker}\`` : ""} at the use site naming what you chose and the stdlib or existing alternative you rejected.`,
+            text: `greybeard: rung 6, a new dependency is a design decision. Leave a comment${marker ? ` prefixed \`${marker}\`` : ""} at the use site naming what you chose and the stdlib or existing alternative you rejected.`,
           },
         ],
       };
     }
 
     const path = input.path;
-    if (!path || (event.toolName !== "write" && event.toolName !== "edit")) return undefined;
+    if (!path) return undefined;
+
+    // Language notes ride the first file of that language this session, usually a
+    // read, before anything has been written.
+    const extra: { type: "text"; text: string }[] = [];
+    if (mode.code && (event.toolName === "read" || event.toolName === "write" || event.toolName === "edit")) {
+      const note = languageNote(path);
+      if (note) {
+        extra.push({ type: "text" as const, text: note });
+        runLedger.push({ kind: "lang", detail: path });
+        totals.lang++;
+        syncStatus(ctx);
+      }
+    }
+    const withExtra = () => (extra.length ? { content: [...event.content, ...extra] } : undefined);
+
+    if (event.toolName !== "write" && event.toolName !== "edit") return withExtra();
 
     // test backstop tracking
     if (isTest(path)) touchedTest = true;
@@ -304,7 +368,7 @@ export default function greybeard(pi: ExtensionAPI): void {
       try {
         content = readFileSync(path, "utf8");
       } catch {
-        return undefined;
+        return withExtra();
       }
       const tally: GlyphTally = {};
       const cleaned = prose ? cleanTypography(content, tally) : cleanSourceComments(content, path, tally);
@@ -321,7 +385,7 @@ export default function greybeard(pi: ExtensionAPI): void {
           /* best effort; presentation only */
         }
       }
-      if (!prose) return undefined;
+      if (!prose) return withExtra();
       const tells = findTells(cleaned);
       const flagged = tellFlags.get(path) ?? 0;
       if (tells.length && flagged < TELL_CAP) {
@@ -329,10 +393,10 @@ export default function greybeard(pi: ExtensionAPI): void {
         runLedger.push({ kind: "tell", detail: `${path}: ${tells.length} tell(s)` });
         totals.tell++;
         syncStatus(ctx);
-        return { content: [...event.content, { type: "text" as const, text: formatTells(tells) }] };
+        return { content: [...event.content, ...extra, { type: "text" as const, text: formatTells(tells) }] };
       }
     }
-    return undefined;
+    return withExtra();
   });
 
   // -- end of run: test backstop, action card --
@@ -488,6 +552,8 @@ export default function greybeard(pi: ExtensionAPI): void {
         if (glyphs) lines.push(`glyph fixes       ${glyphs} in ${cleanedFiles.size} file${cleanedFiles.size > 1 ? "s" : ""} (${breakdown})`);
         if (totals.dep) lines.push(`dependency flags  ${totals.dep}`);
         if (totals.tell) lines.push(`tells flagged     ${totals.tell}`);
+        if (totals.churn) lines.push(`dead ends flagged ${totals.churn}`);
+        if (totals.lang) lines.push(`language notes    ${totals.lang}`);
         if (totals.test) lines.push(`test gaps         ${totals.test}`);
         if (lines.length) lines.push(`runs              ${runsWithActions} of ${runs} took action`);
         else lines.push("no enforcement actions this session");
