@@ -35,7 +35,7 @@ Every change leaves through all three, whatever rung built it.
 - **Shortest working diff, fewest files.** The smallest change in the wrong place is a second bug, not a fix.
 - **Root cause, not symptom.** A report names a symptom. Grep every caller of the function you touch and fix it once at the shared point; patching only the named path leaves sibling callers broken.
 - **Edge-case-correct beats flimsy.** Between two same-size options, take the one right on the edges. Lazy means less code, not a weaker algorithm.
-- **Do not convert.** Working hand-rolled code gets extended in its own style. Swapping it for a framework or library (argparse for a working argv loop, a picker lib over `<input type="date">`, app code over a DB constraint) is a rewrite nobody asked for.
+- **Do not convert.** Working hand-rolled code gets extended in its own style. Swapping it for a framework or library is a rewrite nobody asked for.
 - **The ask defines the diff.** An improvement you noticed next door is one line in the report, never a change in the diff.
 - **Default, don't stall.** An ambiguous ask gets the lazy reading shipped and questioned in the same response: `did X; Y covers it; say so if you need full X`. Never block on an answer you can default.
 - **YAGNI applies to tests.** One runnable check per change. No framework or fixtures.

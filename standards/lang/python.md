@@ -1,5 +1,5 @@
 - A class with one method and no state is a function. An `__init__` that only stores arguments for a single call site is packaging, not design.
 - A loop whose body is only `result.append(...)` is a comprehension. If the caller just iterates it, `yield` instead and the list never exists.
 - A dict guarding a pure function is `functools.lru_cache`. It ships `cache_clear()`, so needing invalidation is not a reason to hand-roll one.
-- Reaching for `re` against a fixed string is `str.startswith`, `removeprefix`, `split`, or `partition`.
+- `argparse` bolted onto a working argv loop is a rewrite. Add the parameter with a default and read the slot you need.
 - A `try/except` that re-raises unchanged, and an `isinstance` check that restates the annotation, are both noise. Delete them and the caller sees the real error.

@@ -2,4 +2,4 @@
 - A loop pushing into an array is `map` or `filter`. A `reduce` that builds an array is `filter` then `map`.
 - A cancellation flag threaded through call sites is an `AbortController`. Fetch, timers, and event listeners all take its signal.
 - `||` for a default swallows `0` and `""`. `??` is what you meant, and `?.` replaces the `&&` chain guarding a lookup.
-- A deep-clone helper is `structuredClone`, which keeps Map, Set, Date, and cycles that a JSON round trip silently destroys.
+- A date-picker dependency is `<input type="date">`. The platform shipped it, styled, keyboard accessible, and localized.
