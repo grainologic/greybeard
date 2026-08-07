@@ -1,5 +1,5 @@
-- `case class` replaces equals, hashCode, toString, and the companion `apply` you were about to write.
-- `Option` chaining replaces the null-check ladder, and `getOrElse` ends it in one place.
-- Past two levels of nested `flatMap`, a `for` comprehension is the same code that someone can read.
-- An implicit that is not a typeclass instance is action at a distance. Pass it.
-- `var` inside a method is fine. `var` in a public API hands out a race.
+- Seal the hierarchy, then delete the `case _`. The wildcard you kept for safety is exactly what silences the exhaustivity warning the day someone adds a variant.
+- Keep the effect type one layer deep. Two maps at the call site are cheaper than a transformer stack and the library it drags into the build, and they still read in six months.
+- Put `require` straight in the case class body rather than hiding the constructor behind a smart apply. `copy` re-runs the body, so the invariant holds everywhere for one line.
+- Spend implicits and givens on typeclass instances and nothing else. An implicit conversion or config value saves one argument and charges every later reader a grep.
+- A local `var` that cannot escape its method is not shared state. Take the plain loop over the fold that needs a tuple accumulator and a paragraph explaining itself.

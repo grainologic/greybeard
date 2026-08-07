@@ -1,5 +1,5 @@
-- Pattern matching in the function head replaces the `if` at the top of the body, and the compiler checks the clauses.
-- `with` replaces the nest of case statements over `{:ok, _}` tuples.
-- A GenServer holds state that one process owns. A GenServer used to organize code is a mailbox nobody needed.
-- A pipeline reads top to bottom. One that needs a comment is two functions with names.
-- Let it crash: a supervisor restart beats a `rescue` that guesses at a state it cannot see.
+- Reach for a GenServer only when state must outlive the call or be shared between callers. State one caller owns lives in that caller's process, and the module under it stays plain functions.
+- Delete the try/rescue. Crashing under a supervisor is the error handling, and it keeps the stacktrace that a rescue-and-log clause throws away.
+- Write `with` with no else branch by default. An unmatched value falls through to the caller, and the else you were about to add mostly re-wraps errors that were already shaped right.
+- A behaviour plus a mock for your only implementation is an interface maintained for the test suite alone. It arrives with the second adapter, not before.
+- Put the example in `@doc` as an iex session and add one doctest line. The docs become the test you were about to write, and no example ships that you have not run.
