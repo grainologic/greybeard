@@ -1,5 +1,5 @@
-- A class that is only class methods is a module.
-- `each` that builds an array is `map`; `each` that picks is `select`. `each_with_object` is the fallback, not the default.
-- When the class is data, `Struct` or `Data.define` replaces the whole file.
-- `&:symbol` replaces the block that only calls one method.
-- `fetch` with a default replaces `[]` followed by a nil check, and it raises where a typo would otherwise return nil.
+- A class that is only fields is a `Data.define`. It takes a block for the methods you fear losing, so the initializer, the readers, and the `==` you were about to test all go away.
+- Define `each` and include Enumerable, or define `<=>` and include Comparable, then delete the dozen methods you were about to hand-roll. The module's are the ones other code expects.
+- Reach for `case/in` when you catch yourself digging through a response hash and checking each level. Destructuring and validation become one line, and a bad shape raises on its own.
+- Make keyword arguments required rather than defaulting them to nil. The ArgumentError you get free at the call site is the validation you were going to write in the first three lines.
+- `nil` answers `to_a` and `to_s` with empty values, so a guard around a conversion is a line you can delete. Keep the check where nil means something different from empty.

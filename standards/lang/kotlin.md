@@ -1,5 +1,5 @@
-- `data class` replaces hand-written equals, hashCode, toString, and the copy constructor.
-- `!!` is a design decision postponed. Make the type non-null, or handle the null where it appears.
-- `apply`, `let`, `also`, and `run` each do one thing. Three of them chained is a puzzle for the next reader.
-- Extension functions replace the `Utils` object, which is a namespace nobody owns.
-- A `sealed` hierarchy plus `when` makes the compiler prove exhaustiveness, so the `else` branch comes out.
+- Leave the `else` off a `when` over a sealed type. Exhaustiveness turns the compiler into your ticket list, and the branch you deleted was the one that would have swallowed tomorrow's subclass.
+- Make it a `data class` only when callers will destructure and call `copy()` forever. Equality is cheap to add later; a public `copy()` on an evolving type is never cheap to take away.
+- Default arguments delete the builder and the overload ladder. Add `@JvmOverloads` the day a real Java caller exists, never on the chance that one might.
+- Delegate the interface with `by` before hand-writing a third forwarding method, and override only the member you came to change. The other twenty stay unwritten and stay correct.
+- A test seam wants a function type, not an interface. Classes are final by default, a nudge to pass the one lambda you call instead of extracting an interface, an impl, and a fake.
