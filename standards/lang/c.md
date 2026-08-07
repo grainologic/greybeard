@@ -1,5 +1,5 @@
-- One `cleanup:` label per function, every owned pointer NULL at the top. It collapses the duplicated free-and-return chains, a fifth allocation costs one line instead of five, and `free(NULL)` is a no-op so the label needs no guards.
-- A struct owning a variable-length buffer gets a flexible array member and one `malloc(sizeof *p + n)`: one allocation, one free, one pointer to pass around, and no partial-failure path between two of them.
-- Initialize structs with designated initializers at the declaration and let the unlisted members zero themselves. The `init_foo()` that assigns fifteen fields exists because someone declared the struct uninitialized first, and it drifts the day a member is added.
-- Mark every function and file-scope object `static` unless a header declares it, then read the unused-function warning as a delete list the compiler maintains. A non-static definition is invisible to that warning, which is how dead code survives for years.
-- `snprintf` returns the length it would have written, so one call formats and detects truncation, and `snprintf(NULL, 0, ...)` sizes a buffer exactly. That deletes the `strlen` arithmetic, the grow-and-retry loop, and `strncpy`, which does not terminate on truncation.
+- One `cleanup:` label per function, every owned pointer NULL at the top. The duplicated free-and-return chains collapse, and `free(NULL)` is a no-op so the label needs no guards.
+- A struct owning a variable-length buffer gets a flexible array member and one `malloc(sizeof *p + n)`: one allocation, one free, and no partial-failure path between two of them.
+- Initialize structs with designated initializers at the declaration and let the unlisted members zero themselves. An `init_foo()` that assigns fifteen fields drifts the day a member is added.
+- Mark everything `static` unless a header declares it, then read the unused-function warning as a delete list. A non-static definition is invisible to it, which is how dead code survives for years.
+- `snprintf` returns the length it would have written, so one call formats and detects truncation. That is the `strlen` arithmetic and the grow-and-retry loop, both gone.

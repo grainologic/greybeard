@@ -1,5 +1,5 @@
-- In a binary, `Box<dyn Error>` out of `main` is the entire error design: `?` converts anything implementing `Error`, and returning `Err` prints it and exits nonzero. Write the enum the day a caller matches on a variant.
-- A lifetime parameter on a struct is a tax on every type that stores it and every signature that touches it. Own the data, or store an index into a `Vec` you already have; one clone off the hot path is the shorter true answer.
-- Return `impl Iterator<Item = T> + '_` instead of a struct with a hand-written `next`. The adapter chain compiles to the state machine you were about to write. Name the type only when it is public API you must keep stable.
-- Take `&str`, `&[T]`, and `&Path`, not `impl AsRef<_>` or `impl Into<String>`. Callers holding owned values deref-coerce for free, while the bound costs an `as_ref()` inside and one monomorphized copy per argument type.
-- `collect::<Result<Vec<_>, _>>()` replaces the loop, the `with_capacity`, the `push`, and the early return. `Result` implements `FromIterator` and short-circuits on the first `Err`.
+- In a binary, `Box<dyn Error>` out of `main` is the entire error design. Write the enum the day a caller matches on a variant.
+- A lifetime on a struct is a tax on every type that stores it. Own the data, or store an index; one clone off the hot path is the shorter true answer.
+- Return `impl Iterator<Item = T> + '_` instead of a struct with a hand-written `next`. The adapter chain compiles to the state machine you were about to write.
+- Take `&str`, `&[T]`, and `&Path`, not `impl AsRef<_>`. Callers deref-coerce for free, while the bound costs a monomorphized copy per argument type.
+- `collect::<Result<Vec<_>, _>>()` replaces the loop, the `push`, and the early return, because `Result` implements `FromIterator` and short-circuits on the first `Err`.

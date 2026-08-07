@@ -49,5 +49,10 @@ test("notes stay short enough to be a nudge", () => {
     const bullets = body.split("\n").filter((l) => l.startsWith("- "));
     assert.equal(bullets.length, 5, `${f} should carry 5 points, found ${bullets.length}`);
     assert.ok(body.length < 1400, `${f} is ${body.length} chars, too long for a nudge`);
+    // A per-bullet ceiling, because a file-level cap lets one bullet sprawl and
+    // because the discipline it replaces was mine and it decayed.
+    for (const b of bullets) {
+      assert.ok(b.length <= 220, `${f}: ${b.length}-char bullet, over the 220 ceiling: ${b.slice(0, 60)}...`);
+    }
   }
 });

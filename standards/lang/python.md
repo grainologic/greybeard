@@ -1,5 +1,5 @@
 - `argparse` bolted onto a working argv loop is a rewrite. Add the parameter with a default and read the slot you need.
-- An `exists()` check before the open is longer than the recovery and loses the race between the two. `Path.unlink(missing_ok=True)`, `os.makedirs(exist_ok=True)`, `dict.get`, and `contextlib.suppress` are the short form, and an untaken `except` compiles to no setup instruction.
-- Annotate signatures, never bodies. With `list[str]`, `dict[str, int]`, and `str | None` the `typing` import leaves the file entirely.
-- A class with `__enter__` and `__exit__` is a `@contextlib.contextmanager` generator with one `yield`, and a class with `__iter__` and `__next__` and hand-tracked state is a generator function. Keep the class only for a manager that must be reentered.
-- `logging.getLogger(__name__)` at module scope, and no logging wrapper module. A wrapper breaks `%s` lazy formatting and the `stacklevel` that points at the caller, and a library that calls `basicConfig` steals configuration from the application.
+- An `exists()` check before the open is longer than the recovery and loses the race between the two. Ask forgiveness: `missing_ok`, `exist_ok`, `dict.get`, `contextlib.suppress`.
+- Annotate signatures, never bodies. With `list[str]` and `str | None` the `typing` import leaves the file entirely.
+- A class with `__enter__` and `__exit__` is a `@contextlib.contextmanager` generator with one `yield`, and a class with `__iter__` and `__next__` is a generator function.
+- `logging.getLogger(__name__)` at module scope, and no wrapper module. A wrapper breaks lazy `%s` formatting and the `stacklevel` that points at the caller.
