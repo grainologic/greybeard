@@ -1,5 +1,5 @@
-- Objects flow down the pipeline and `Format-*` ends it. A formatted object piped into logic is no longer the object.
-- `Where-Object` and `ForEach-Object` replace the loop that filters and projects.
-- `-ErrorAction Stop` is what makes a non-terminating error reach your `catch`. Without it the `try` is decoration.
-- Splatting a hashtable replaces the seven-parameter call and the backtick continuations holding it together.
-- Put `$null` on the left: `if ($null -eq $x)`. On the right it compares element-wise against an array.
+- Let results fall out of the pipeline instead of into an array you `+=` and return. A function emits everything it leaves uncaptured, and the accumulator you deleted was a quadratic recopy.
+- A `try/catch` around a cmdlet catches nothing until that call carries `-ErrorAction Stop`. Put it on the one call whose failure matters, not around the whole script.
+- Never let `Format-*` run inside a function that returns data. It emits formatting records, so everything downstream can be printed but never sorted, filtered, or exported.
+- Parameter validation belongs in attributes, not the body. `[ValidateSet]` and its siblings fail before your first line runs, write the message for you, and tab-complete for the caller.
+- Declare `SupportsShouldProcess` and gate the destructive line on it rather than inventing a `-DryRun` switch; the attribute hands you `-WhatIf`, `-Confirm`, and the prompting.

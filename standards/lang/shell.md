@@ -1,5 +1,5 @@
-- `set -euo pipefail` at the top turns silent failure into a stop.
-- Quote every expansion: `"$var"`, `"$@"`. An unquoted variable splits on spaces the day a path has one.
-- Parsing `ls` breaks on the first odd filename. Use a glob, or `find -print0` with `read -r -d ''`.
-- `[[ ]]` over `[ ]` in bash, and `$( )` over backticks, which do not nest.
-- A script past a hundred lines with arrays and arithmetic has become a Python script that has not admitted it.
+- `set -e` is a tripwire, not error handling: it stays quiet inside `if`, inside `&&` chains, and behind `local x=$(cmd)`, so the failure that would corrupt state still needs its own guard.
+- A required variable gets `${VAR:?why}` at its first use, not a validation block at the top: one expansion, names the variable, exits nonzero, nothing to keep in sync.
+- Feed a `while read` loop by redirection, never by piping into it. The piped loop runs in a subshell, so every variable it set is gone by `done`.
+- Pass arguments as `"$@"` or an array, never a space-joined string. The string reads fine until a path has a space, and every fix from there is quoting piled on quoting.
+- Loop over a glob, never over `ls` output. An unmatched pattern comes through literally, so one existence check inside the loop is the whole guard.
