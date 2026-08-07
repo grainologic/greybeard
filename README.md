@@ -82,7 +82,7 @@ The rules are the voice in the room. This is what the hands do.
 | **A sentence reads like a machine wrote it. Then what?**<br>The offending sentences (em-dash, cluster vocabulary) come back appended to the model's own write result, so it self-corrects in the same turn. Finding-only and capped; a clean scan says nothing. |
 | **Source changed, but no test did.**<br>The run gets flagged at the end. This one stays quiet until you turn it on. |
 | **Three tries at the same file, every one failing. Now what?**<br>The third failure against one target comes back on the failing tool result: the approach is spent, say what the failures prove, then take a different route or report the block. It fires again at six, then stops. Anchored on the target rather than the command, because a dead end keeps the file and swaps the tool around it. |
-| **The model just opened its first Python file.**<br>Five things a senior engineer would not write in that language, once per session, from `standards/lang/`. Twenty-two languages, and a language is added by writing its markdown. |
+| **The model just opened its first Python file.**<br>Five things a senior engineer would not write in that language, once per session, from `standards/lang/`. Twenty-three languages, and a language is added by writing its markdown. |
 
 Around all that: a statusline, a card summing up each run, a toggle panel, and
 `ctrl-alt-g` to flip everything on and off.

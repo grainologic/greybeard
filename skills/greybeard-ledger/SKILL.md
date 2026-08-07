@@ -25,8 +25,8 @@ Each hit is one ledger row.
 
 Read each comment and sort it:
 
-- **Debt** — names a ceiling and an upgrade path or trigger ("O(n^2) scan, index if it gets hot"). These are deferrals that must be revisited.
-- **Decision** — states a choice and the rejected alternative ("chose pico-args over stdlib arg parsing"), with no trigger. These are settled.
+- **Debt**: names a ceiling and an upgrade path or trigger ("O(n^2) scan, index if it gets hot"). These are deferrals that must be revisited.
+- **Decision**: states a choice and the rejected alternative ("chose pico-args over stdlib arg parsing"), with no trigger. These are settled.
 
 Any comment that names a ceiling but no upgrade trigger gets a `no-trigger` tag: those are the ones that silently rot.
 

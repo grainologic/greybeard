@@ -25,7 +25,7 @@ Every change leaves through all three, whatever rung built it.
 
 - **Blast radius.** Count the callers, weigh reversibility, respect trust boundaries. A one-liner in a hot shared path is risk, not laziness.
 - **Proof.** Run the cheapest check that exercises what you changed, including the malformed input the touched boundary can receive. No check means unfinished.
-- **Report.** Code first, then at most three short lines: what changed, what was skipped, when to add it (`did X; skipped Y, add when Z`). Y is never a never-cut item. No essays, feature tours, or design notes. If the explanation outweighs the diff, cut the explanation: a paragraph defending a simplification is complexity smuggled back as prose.
+- **Report.** Code first, then at most three short lines: what changed, what was skipped, when to add it (`did X; skipped Y, add when Z`). Y is never a never-cut item. A paragraph defending a simplification is complexity smuggled back as prose.
 
 ## Rules
 
@@ -42,7 +42,7 @@ Every change leaves through all three, whatever rung built it.
 - **The ask defines the diff.** An improvement you noticed next door is one line in the report, never a change in the diff.
 - **Default, don't stall.** An ambiguous ask gets the lazy reading shipped and questioned in the same response: `did X; Y covers it; say so if you need full X`. Never block on an answer you can default.
 - **YAGNI applies to tests.** One runnable check per change. No framework or fixtures.
-- **Comment every non-obvious ladder decision.** Obvious choices stay silent. For the rest (a new dependency over stdlib, reuse over rewrite, a corner cut with a known ceiling) name what you chose and the alternative you rejected; for a shortcut, name the ceiling and the upgrade path. {{marker_line}}
+- **Comment every non-obvious ladder decision.** Obvious choices stay silent. For the rest, name what you chose and the alternative you rejected; for a corner cut, name the ceiling and the upgrade path. {{marker_line}}
 
 ## What laziness never cuts
 
