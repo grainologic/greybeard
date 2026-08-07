@@ -1,5 +1,5 @@
-- `.clone()` to quiet the borrow checker is a decision, not a fix. Try a reference or a narrower scope first.
-- `unwrap()` outside tests is a panic you have scheduled. `?` propagates and costs one character.
-- A trait with one implementor is a struct. Traits pay at the second implementor or a generic bound.
-- Take `&str` and `&[T]` in arguments. `String` and `Vec<T>` are for when you keep it.
-- Iterator chains replace index loops and their bounds checks. `collect()` only when a caller needs the collection.
+- In a binary, `Box<dyn Error>` out of `main` is the entire error design: `?` converts anything implementing `Error`, and returning `Err` prints it and exits nonzero. Write the enum the day a caller matches on a variant.
+- A lifetime parameter on a struct is a tax on every type that stores it and every signature that touches it. Own the data, or store an index into a `Vec` you already have; one clone off the hot path is the shorter true answer.
+- Return `impl Iterator<Item = T> + '_` instead of a struct with a hand-written `next`. The adapter chain compiles to the state machine you were about to write. Name the type only when it is public API you must keep stable.
+- Take `&str`, `&[T]`, and `&Path`, not `impl AsRef<_>` or `impl Into<String>`. Callers holding owned values deref-coerce for free, while the bound costs an `as_ref()` inside and one monomorphized copy per argument type.
+- `collect::<Result<Vec<_>, _>>()` replaces the loop, the `with_capacity`, the `push`, and the early return. `Result` implements `FromIterator` and short-circuits on the first `Err`.
