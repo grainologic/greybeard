@@ -1,5 +1,5 @@
-- Vectorized operations replace the `for` loop, and the `apply` family replaces what is left.
-- Growing a vector inside a loop reallocates every iteration. Preallocate, or use `vapply` and let it size the result.
-- `seq_along(x)` over `1:length(x)`, which counts down from 1 to 0 when `x` is empty.
-- `vapply` over `sapply` when the result type matters, because `sapply` silently changes shape.
-- `<-` assigns and `=` names arguments. Mixing them reads as a bug to everyone who did not write it.
+- A plain list with a class attribute and one method is usually the whole object system. S4 sells multiple dispatch and R6 sells mutation; if you cannot name which you need, you need neither.
+- Spend the extra argument on `vapply`'s FUN.VALUE. It checks type and length on every element, which deletes the downstream type check and the "sapply returned a list" branch.
+- Never send Dates or factors through `ifelse`. It evaluates both arms and keeps the attributes of the test rather than the branches, so index-assign into a copy and the class survives.
+- Compare with `%in%` wherever NA can appear. It yields FALSE instead of NA, so the `is.na` guard that the `==` version drags along never gets written.
+- Index a data frame like the list it is: `df[[col]]` for the vector, `df[cols]` for a data frame. The `drop = FALSE` you keep adding is a fix for a bracket you did not need.

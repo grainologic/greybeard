@@ -1,5 +1,5 @@
-- Point-free until it stops reading. A named argument beats a composition nobody can trace.
-- A typeclass with one instance is a function with extra ceremony.
-- `Data.Map` past a handful of entries. An association list is a linear scan wearing a nice interface.
-- `foldl'` over `foldl`, because the lazy accumulator builds a thunk chain the size of the input.
-- `where` for function-local helpers keeps the signature at the top where a reader looks first.
+- Reach for a deriving clause before an instance body, and let a newtype inherit what is underneath. A hand-written instance is one GHC stops keeping correct the moment the type changes.
+- A class with one instance is a function you have not passed yet. Take the operation as an argument, and add the class when two callers genuinely need it chosen by type.
+- Thread state through plain arguments until that actually hurts. A transformer stack costs a newtype, a run function, and a deriving list to buy back what one parameter was giving you.
+- Put the bang on a fold accumulator while writing the fold, not after profiling. The strict version is the same length, and the lazy one is a thunk chain you will pay someone to find.
+- Treat an incomplete-pattern warning as a failing test. Adding the missing equation is smaller than the unit test you would otherwise write to catch that case.

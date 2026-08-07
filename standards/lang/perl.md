@@ -1,5 +1,5 @@
-- `use strict; use warnings;` at the top of every file, without exception.
-- Three-argument `open` with a lexical filehandle. The two-argument form takes a filename that can carry a mode.
-- `grep` and `map` replace the loop that filters and transforms.
-- `my` scoping throughout. A package variable is a global that has learned to hide.
-- A regex worth a comment is a regex worth `/x` and named captures, which put the explanation inside the pattern.
+- Bind a match in list context on the assignment line. `$1` and `$2` copied into names further down are live globals that the next match in the same scope quietly overwrites.
+- Change a global by `local`ising it rather than saving and restoring it. The old value comes back on scope exit even if you die, which deletes the eval-and-restore pair.
+- Let the diamond operator be the input layer. It already means the files named in `@ARGV` or standard input, so the `--file` option, the open, and the error branch behind them all go.
+- Try it as a one-liner against the real data first. If it survives, it ships in the Makefile, and the script file with getopt, POD, and a `main()` never gets created.
+- Reach for a hash slice before a loop: one assignment against a key list copies, filters, or defaults a whole group, which is all the foreach body was doing.
