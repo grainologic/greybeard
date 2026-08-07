@@ -1,0 +1,5 @@
+- A type that only carries data is a positional `record`: value equality, `ToString`, and `with` in one line. An entity needing reference equality stays a class, which is not a reason to hand-write `Equals`.
+- Never write a finalizer. Wrap a raw OS handle in a `SafeHandle`, and when every field is managed a sealed class whose plain `Dispose()` forwards to them is the entire pattern.
+- With nullable reference types on, an interior null check is a branch no caller reaches. Guard where untyped data lands, and `ArgumentNullException.ThrowIfNull(x)` already knows the parameter name.
+- Map by hand with a `Select` into a record rather than adding a mapping package. The projection is shorter than the profile plus registration, and the boilerplate objection starts at dozens of types, not three.
+- Delete `ConfigureAwait(false)` from application code: there is no `SynchronizationContext` to escape. Keep it in a library shipped to unknown callers, where a WPF consumer still has one.

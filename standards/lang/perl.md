@@ -1,0 +1,5 @@
+- Bind a match in list context on the assignment line. `$1` and `$2` copied into names further down are live globals that the next match in the same scope quietly overwrites.
+- Change a global by `local`ising it rather than saving and restoring it. The old value comes back on scope exit even if you die, which deletes the eval-and-restore pair.
+- Let the diamond operator be the input layer. It already means the files named in `@ARGV` or standard input, so the `--file` option, the open, and the error branch behind them all go.
+- Try it as a one-liner against the real data first. If it survives, it ships in the Makefile, and the script file with getopt, POD, and a `main()` never gets created.
+- Reach for a hash slice before a loop: one assignment against a key list copies, filters, or defaults a whole group, which is all the foreach body was doing.

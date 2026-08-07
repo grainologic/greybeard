@@ -1,0 +1,5 @@
+- Reach for a GenServer only when state must outlive the call or be shared between callers. State one caller owns lives in that caller's process, and the module under it stays plain functions.
+- Delete the try/rescue. Crashing under a supervisor is the error handling, and it keeps the stacktrace that a rescue-and-log clause throws away.
+- Write `with` with no else branch by default. An unmatched value falls through to the caller, and the else you were about to add mostly re-wraps errors that were already shaped right.
+- If a function can do it, it is not a macro. Every `quote` costs readable stacktraces and greppable call sites, so keep compile time for the cases that genuinely need it.
+- Put the example in `@doc` as an iex session and add one doctest line. The docs become the test you were about to write, and no example ships that you have not run.

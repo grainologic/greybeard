@@ -1,0 +1,5 @@
+- `assert(io.open(path))` is the whole check: assert forwards every return value on success and raises the callee's own message on failure, so the nil-check-and-raise block never gets written.
+- Failure is a second return value, not an object. `nil, err` allocates nothing, a caller who ignores it simply drops the extra value, and a Result table is ceremony.
+- One type needs one metatable: set `__index` and return the table. That is the whole class, and defaults belong in `__index` rather than in a merge loop.
+- Parenthesise a `gsub` or `find` whose result you pass onward. Its second return silently becomes an extra argument or an extra field, and it reads as the caller's bug.
+- `require` memoises, so the table a module returns is already the singleton. The init guard and the `get_instance` re-implement `package.loaded` and can now disagree with it.

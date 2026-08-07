@@ -1,0 +1,5 @@
+- Return by value and delete the out-parameter. Prvalue initialisation is guaranteed elision and a named local is at worst a move, so `Out&` only buys the caller a default-constructed variable.
+- Declare zero special members. Even an empty destructor suppresses the implicit moves, turning every return-by-value into a copy and dragging the other four in behind it.
+- Take `std::string_view` and `std::span` in read-only parameters and the overload pair collapses to one function. If the body reaches for `c_str()`, take `const std::string&`: that is the exception.
+- A type with no invariant is an aggregate, a class with no state between calls is a free function, and a virtual base with one derived class is a vtable standing in for an `#include`.
+- Keep the helper out of the header. A private member function recompiles every translation unit that includes you; a free function in an anonymous namespace in the `.cpp` does not.

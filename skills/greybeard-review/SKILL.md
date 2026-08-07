@@ -14,10 +14,11 @@ Report only what to change. Do not rewrite code or prose unless the user asks.
 Walk the ladder against the change. For each finding, cite `file:line`, name the rung it fails, and state the smaller replacement:
 
 - Rung 0/1: code that should not exist, or that a deletion would solve.
-- Rung 2-5: a hand-rolled thing the codebase, stdlib, platform, or an installed dependency already does.
-- Rung 5: a new dependency without a decision comment (the configured marker, default `WHY:`) justifying it over the alternative.
-- Rung 8: a change in a hot or shared path with wide blast radius, or a symptom patch that leaves sibling callers broken.
-- Rung 9: non-trivial logic with no runnable check.
+- Rung 3: a sibling of something that existed and only needed widening.
+- Rung 2, 4-6: a hand-rolled thing the codebase, stdlib, platform, or an installed dependency already does.
+- Rung 6: a new dependency without a decision comment (the configured marker, default `WHY:`) justifying it over the alternative.
+- Output Gate, blast radius: a change in a hot or shared path, or a symptom patch that leaves sibling callers broken.
+- Output Gate, proof: non-trivial logic with no runnable check.
 - Rules: unrequested abstractions, speculative scaffolding, clever over boring.
 
 ## Writing pass

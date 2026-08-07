@@ -1,0 +1,5 @@
+- Let results fall out of the pipeline instead of into an array you `+=` and return. A function emits everything it leaves uncaptured, and the accumulator you deleted was a quadratic recopy.
+- A `try/catch` around a cmdlet catches nothing until that call carries `-ErrorAction Stop`. Put it on the one call whose failure matters, not around the whole script.
+- Never let `Format-*` run inside a function that returns data. It emits formatting records, so everything downstream can be printed but never sorted, filtered, or exported.
+- Parameter validation belongs in attributes, not the body. `[ValidateSet]` and its siblings fail before your first line runs, write the message for you, and tab-complete for the caller.
+- Declare `SupportsShouldProcess` and gate the destructive line on it rather than inventing a `-DryRun` switch; the attribute hands you `-WhatIf`, `-Confirm`, and the prompting.

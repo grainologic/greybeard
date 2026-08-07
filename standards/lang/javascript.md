@@ -1,0 +1,5 @@
+- `||` for a default swallows `0` and the empty string, and a default parameter fires only on `undefined`, so a null from JSON sails straight past it. `??` is the one that means what you meant.
+- Check the platform before npm. The runtime ships argument parsing, a test runner, and fetch with a timeout signal, and each avoided dependency is also an avoided config file.
+- Never hand-roll a promise around a callback API. The promise version almost always already ships, and where it does not, one wrapper gets the rejection path right where hand-written executors do not.
+- Thread an `AbortController` signal instead of a cancellation flag. Fetch, timers, and listeners all take it, so teardown is one call rather than a map of handler references that drift apart.
+- Serializing is not copying: a JSON round trip silently drops whatever the format cannot say, so clone and snapshot through `structuredClone` and keep JSON for the wire.

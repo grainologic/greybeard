@@ -1,0 +1,5 @@
+- A class that is only fields is a `Data.define`. It takes a block for the methods you fear losing, so the initializer, the readers, and the `==` you were about to test all go away.
+- Implement the one primitive a core mixin needs and include it. The dozen methods you were about to hand-roll arrive free, and they are the ones other code already expects.
+- Reach for `case/in` when you catch yourself digging through a response hash and checking each level. Destructuring and validation become one line, and a bad shape raises on its own.
+- Make keyword arguments required rather than defaulting them to nil. The ArgumentError you get free at the call site is the validation you were going to write in the first three lines.
+- `nil` answers `to_a` and `to_s` with empty values, so a guard around a conversion is a line you can delete. Keep the check where nil means something different from empty.

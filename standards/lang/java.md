@@ -1,0 +1,5 @@
+- Anything that only carries data is a `record`, with validation in the compact constructor. That deletes the fields, the accessors, `equals`, `hashCode`, `toString`, and usually Lombok behind them.
+- Default access is an access level. Leave classes and members package-private; a test in the same package still sees them, and a helper nobody outside names is a nested class, not a file.
+- Grep the JDK before adding Guava or commons-lang. Most of what those jars were imported for landed in `java.util` and `java.nio.file` years ago, and a deleted dependency is a CVE feed you stop reading.
+- Model closed alternatives as a `sealed` interface over records and switch with patterns, leaving out `default` so the compiler names every site to change. That is the visitor pattern at a fifth of the size.
+- `Optional` is a return type: never a field, a parameter, or a wrapper around a collection, because the empty collection already says it.

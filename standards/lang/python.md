@@ -1,0 +1,5 @@
+- An `exists()` check before the open is longer than the recovery and loses the race between the two. Ask forgiveness: `missing_ok`, `exist_ok`, `dict.get`, `contextlib.suppress`.
+- Annotate signatures, never bodies. With `list[str]` and `str | None` the `typing` import leaves the file entirely.
+- Before writing an accumulation loop, ask whether `collections` already is that loop. A tally, a grouping, and a memo are each one call, and the initialise-if-absent line goes with them.
+- A class that exists only to satisfy a dunder protocol is a generator you have not written: one `yield` replaces the context manager, and a generator function replaces hand-tracked iteration state.
+- `logging.getLogger(__name__)` at module scope, and no wrapper module. A wrapper breaks lazy `%s` formatting and the `stacklevel` that points at the caller.

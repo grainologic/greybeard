@@ -1,0 +1,5 @@
+- A plain list with a class attribute and one method is usually the whole object system. S4 sells multiple dispatch and R6 sells mutation; if you cannot name which you need, you need neither.
+- Spend the extra argument on `vapply`'s FUN.VALUE. It checks type and length on every element, which deletes the downstream type check and the "sapply returned a list" branch.
+- Assume attribute loss when a function rebuilds a vector. `ifelse` keeps the test's attributes rather than the branches', so update classed data by index-assignment into a copy.
+- Compare with `%in%` wherever NA can appear. It yields FALSE instead of NA, so the `is.na` guard that the `==` version drags along never gets written.
+- Index a data frame like the list it is: `df[[col]]` for the vector, `df[cols]` for a data frame. The `drop = FALSE` you keep adding is a fix for a bracket you did not need.

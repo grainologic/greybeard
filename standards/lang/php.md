@@ -1,0 +1,5 @@
+- Open the file with `declare(strict_types=1)` and put the types in the signature. The engine's TypeError is the validation you were about to hand-write in the first three lines.
+- Promote constructor parameters and mark them `readonly`. The property declaration, the assignment, and the getter that existed only to block mutation all leave with it.
+- Write `match`, not `switch`: it is an expression, so the temp variable, the break lines, and the fall-through you forgot to guard against all vanish.
+- The moment a group of string constants grows a validator, it is a backed enum. `tryFrom` returning null is the validation, and the constant list goes with it.
+- Delete any docblock that restates the signature. PHPDoc earns its place only for what the type system cannot say, chiefly array shapes and generics.

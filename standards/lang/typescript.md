@@ -1,0 +1,5 @@
+- Derive types from the values you already wrote, with `typeof` and `ReturnType`. A hand-written parallel interface is a second source of truth that you update twice and drift once.
+- Reach for `satisfies` where you were about to annotate and then cast back. The annotation widens the literal and the cast lies to get it back; one keyword deletes both.
+- Prefer the syntax that erases. Constructs emitting runtime JavaScript are the ones type-stripping runtimes reject, and a union of string literals does the same job with nothing left at run time.
+- Validate once at the edge and trust the type inward. Every downstream guard disappears, because narrowing already proved the field is there; this is doing the check once, not skipping it.
+- Six optional fields is a discriminated union you have not written yet. Narrowing on the tag deletes the guards and makes the impossible combination a compile error.

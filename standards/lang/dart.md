@@ -1,0 +1,5 @@
+- A shape local to one call path is a record, not a class. Value equality and destructuring come free, and it promotes to a class the day it escapes.
+- Seal the base class and delete the switch's default clause. Exhaustiveness is checked only when no default exists, and the compile error replaces the StateError you would hand-write.
+- Build lists inside the literal with collection-if, spread, and `for`, not a helper that allocates and mutates a local. That helper is a name, a call site, and a test you never needed.
+- A set-once field is `late final`, not nullable plus `!` at every use. It throws once at the real bug, where the null checks only pretend to handle a state that cannot occur.
+- Identical `const` expressions are canonicalized to one instance, so that is already your cache. Delete the factory that was memoizing value objects.

@@ -1,0 +1,5 @@
+- One `cleanup:` label per function, every owned pointer NULL at the top. The duplicated free-and-return chains collapse, and `free(NULL)` is a no-op so the label needs no guards.
+- Give every object one allocation and one free. A struct owning a variable-length buffer allocates header and payload together, because each extra allocation is another partial-failure path you own.
+- Initialize structs with designated initializers at the declaration and let the unlisted members zero themselves. An `init_foo()` that assigns fifteen fields drifts the day a member is added.
+- Mark everything `static` unless a header declares it, then read the unused-function warning as a delete list. A non-static definition is invisible to it, which is how dead code survives for years.
+- Trust the bounded writer's return instead of precomputing lengths. `snprintf` reports the length it needed, so sizing and truncation detection are one call and the arithmetic above it goes.
