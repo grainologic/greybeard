@@ -1,5 +1,5 @@
-- A class that is only fields with getters is a `record`, which brings equality and `toString` with it.
-- An interface with one implementation and no test double is indirection. Let the class be the type.
-- `Optional` is a return type. As a field or a parameter it adds a null case instead of removing one.
-- `try`-with-resources replaces the `finally` block whose only job is closing.
-- A stream that filters and collects earns its place; a stream that only iterates is a `for` loop wearing a costume.
+- Anything that only carries data is a `record`, with validation in the compact constructor. That one declaration deletes the fields, the accessors, `equals`, `hashCode`, `toString`, the builder, and usually the Lombok dependency behind them.
+- Do not extract an interface so a class can be mocked. A one-implementation interface is a second file and a jump-to-definition detour, and it earns its place at the second implementation.
+- Grep the JDK before adding Guava or commons-lang: `List.of`, `Map.of`, `String.join`, `String.isBlank`, `String.repeat`, `Files.readString`, and `Objects.requireNonNullElse` cover most of why those jars were imported. A dependency deleted is a transitive tree and a CVE feed you stop reading.
+- Model closed alternatives as a `sealed` interface over records and switch on it with patterns, leaving out the `default` branch so the compiler names every site to change when a case is added. That is the visitor pattern at a fifth of the size.
+- `Optional` is a return type: never a field, never a parameter, never wrapped around a collection, because the empty collection already says it. Most `Optional.ofNullable(x).orElse(y)` is `Objects.requireNonNullElse(x, y)` written long.

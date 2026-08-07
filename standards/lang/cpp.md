@@ -1,5 +1,5 @@
-- Raw `new` and `delete` is `unique_ptr`. `shared_ptr` is for shared ownership, not for avoiding the question.
-- Take `const&` for anything bigger than a pointer. Take by value only when you move it.
-- A class whose members are all public with getters and setters is a struct you have hidden.
-- Range-for and the standard algorithms replace index loops and their off-by-ones.
-- `enum class` over plain `enum`, so the compiler rejects the comparison you did not mean to write.
+- Return the object by value and delete the out-parameter. Initialising from a prvalue is guaranteed elision since C++17 and a named local is at worst a move, so an `Out&` parameter only buys the caller a default-constructed variable and an unclear contract.
+- Declare zero special members. Writing even an empty destructor suppresses the implicit move constructor and move assignment, which turns every return-by-value into a copy and drags the other four in behind it.
+- Take `std::string_view` and `std::span` in read-only parameters and the `const char*` plus `const std::string&` overload pair collapses into one function. If the body reaches for `c_str()`, take `const std::string&`: that is the exception, not the default.
+- A type with no invariant is an aggregate: public members, default member initialisers, no constructor. A class with no state between calls is a free function, and a virtual base with one derived class is a vtable standing in for an `#include`.
+- Keep the helper out of the header. A private member function recompiles every translation unit that includes you and grants itself access to all your state, while a free function in an anonymous namespace in the `.cpp` is smaller and cheaper to build.
