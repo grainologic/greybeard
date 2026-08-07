@@ -2,4 +2,4 @@
 - Declare an interface where it is consumed, never beside its implementation. Satisfaction is structural, so the right number to write today is zero.
 - `fmt.Errorf("doing x: %w", err)` plus `errors.Is` at the one place that cares is the whole error design. A sentinel earns its place the day a caller branches on it.
 - Reach for a goroutine last. It brings a context, a WaitGroup, an error path, and a shutdown story, so a sequential loop that finishes in time is the smaller correct program.
-- `net/http`'s own `ServeMux` matches method and wildcard patterns, which is most of what the router dependency was for. Middleware is a function taking a handler and returning one.
+- Check the standard library before adding a web dependency. Its own mux routes by method and wildcard, and middleware is a function taking a handler and returning one.

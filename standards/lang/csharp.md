@@ -1,5 +1,5 @@
 - A type that only carries data is a positional `record`: value equality, `ToString`, and `with` in one line. An entity needing reference equality stays a class, which is not a reason to hand-write `Equals`.
-- Write `Dispose(bool)` and a finalizer only for a raw unmanaged handle, and prefer `SafeHandle` so you never do. When every field is `IDisposable`, a sealed class with a plain `Dispose()` is the whole thing.
+- Never write a finalizer. Wrap a raw OS handle in a `SafeHandle`, and when every field is managed a sealed class whose plain `Dispose()` forwards to them is the entire pattern.
 - With nullable reference types on, an interior null check is a branch no caller reaches. Guard where untyped data lands, and `ArgumentNullException.ThrowIfNull(x)` already knows the parameter name.
-- A mapping library costs a package, a profile class, and a startup registration to replace a `Select` into a record. The boilerplate objection is real at fifty types and imaginary at three.
+- Map by hand with a `Select` into a record rather than adding a mapping package. The projection is shorter than the profile plus registration, and the boilerplate objection starts at dozens of types, not three.
 - Delete `ConfigureAwait(false)` from application code: there is no `SynchronizationContext` to escape. Keep it in a library shipped to unknown callers, where a WPF consumer still has one.

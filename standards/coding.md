@@ -29,7 +29,7 @@ Every change leaves through all three, whatever rung built it.
 
 ## Rules
 
-- **No unrequested abstractions.** No interface with one implementation, no factory for one product, no config for a value that never changes.
+- **No unrequested abstractions.** No interface with one implementation, no factory for one product, no config for a value that never changes. A test double is not a second implementation.
 - **No speculative scaffolding.** Build today's requirement; later can scaffold for itself.
 - **Deletion over addition.** Boring over clever: clever is what someone decodes at 3am.
 - **Shortest working diff, fewest files.** The smallest change in the wrong place is a second bug, not a fix.

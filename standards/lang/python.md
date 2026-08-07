@@ -1,5 +1,5 @@
 - `argparse` bolted onto a working argv loop is a rewrite. Add the parameter with a default and read the slot you need.
 - An `exists()` check before the open is longer than the recovery and loses the race between the two. Ask forgiveness: `missing_ok`, `exist_ok`, `dict.get`, `contextlib.suppress`.
 - Annotate signatures, never bodies. With `list[str]` and `str | None` the `typing` import leaves the file entirely.
-- A class with `__enter__` and `__exit__` is a `@contextlib.contextmanager` generator with one `yield`, and a class with `__iter__` and `__next__` is a generator function.
+- A class that exists only to satisfy a dunder protocol is a generator you have not written: one `yield` replaces the context manager, and a generator function replaces hand-tracked iteration state.
 - `logging.getLogger(__name__)` at module scope, and no wrapper module. A wrapper breaks lazy `%s` formatting and the `stacklevel` that points at the caller.

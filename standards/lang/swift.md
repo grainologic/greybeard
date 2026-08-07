@@ -1,4 +1,4 @@
-- Do not extract a protocol until a second conformer exists. A test double does not count, because injecting a closure is shorter than a protocol, a mock class, and the files they live in.
+- Put `@MainActor` on the whole type once rather than hopping to the main queue inside each callback body. The compiler then proves the thing all those dispatch calls were only hoping for.
 - Let a failing function `throw` rather than return `Result`. Callers spend one `try` instead of a switch, and the rare place that must store an outcome wraps the call in `Result { }`.
 - Never hand-write `==` or `hash(into:)`. Declare the conformance and let synthesis read the stored properties; when synthesis is wrong the bug is the property list, not the operator.
 - Put custom initializers in an extension so the free memberwise init survives, and leave types internal until another module calls them, because `public` withdraws that init too.
