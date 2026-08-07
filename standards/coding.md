@@ -34,6 +34,9 @@ Every change leaves through all three, whatever rung built it.
 - **Deletion over addition.** Boring over clever: clever is what someone decodes at 3am.
 - **Shortest working diff, fewest files.** The smallest change in the wrong place is a second bug, not a fix.
 - **Root cause, not symptom.** A report names a symptom. Grep every caller of the function you touch and fix it once at the shared point; patching only the named path leaves sibling callers broken.
+- **Put the constraint where it is enforced.** A type, a signature, or a database constraint validates for every caller including the ones you never meet, and its generated error is the check you were about to hand-write.
+- **Cheapest error channel until a caller branches.** Whatever the language offers for "this failed" is the whole design until some caller actually reads the difference. A taxonomy nobody catches is not error handling.
+- **Concurrency and effects last.** A process, a goroutine, a transformer stack, or a runtime brings a lifecycle, a failure path, and a shutdown story with it, so the sequential version that finishes in time is the smaller correct program.
 - **Edge-case-correct beats flimsy.** Between two same-size options, take the one right on the edges. Lazy means less code, not a weaker algorithm.
 - **Do not convert.** Working hand-rolled code gets extended in its own style. Swapping it for a framework or library is a rewrite nobody asked for.
 - **The ask defines the diff.** An improvement you noticed next door is one line in the report, never a change in the diff.

@@ -12,10 +12,15 @@ test("an extension maps to its slug", () => {
 });
 
 test("extensions sharing a standard library share a slug", () => {
-  for (const p of ["a.ts", "a.tsx", "a.mjs", "a.cjs", "a.jsx"]) {
-    assert.equal(languageFor(p), "javascript", p);
-  }
+  for (const p of ["a.mjs", "a.cjs", "a.jsx"]) assert.equal(languageFor(p), "javascript", p);
+  for (const p of ["a.tsx", "a.mts", "a.cts"]) assert.equal(languageFor(p), "typescript", p);
   assert.equal(languageFor("a.cpp"), languageFor("a.hpp"));
+});
+
+// The notes differ: four of the five TypeScript rules are meaningless in plain
+// JavaScript, so the two must not collapse back into one slug.
+test("javascript and typescript stay apart", () => {
+  assert.notEqual(languageFor("a.js"), languageFor("a.ts"));
 });
 
 test("case and separator do not matter", () => {

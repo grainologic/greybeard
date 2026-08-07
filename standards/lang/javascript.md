@@ -1,5 +1,5 @@
-- Derive types from the values you already wrote, with `typeof` and `ReturnType`. A hand-written parallel interface is a second source of truth that you update twice and drift once.
-- Reach for `satisfies` where you were about to annotate and then cast back. The annotation widens the literal and the cast lies to get it back; one keyword deletes both.
-- `enum`, `namespace`, and parameter properties emit runtime JavaScript, so type-stripping runtimes reject them. A union of string literals erases cleanly.
-- Six optional fields is a discriminated union you have not written yet. Narrowing on the tag deletes the guards and makes the impossible combination a compile error.
-- No barrel `index.ts`. It buys one shorter import path and costs import cycles, dead code the bundler can no longer drop, and a file every rename touches.
+- `||` for a default swallows `0` and the empty string, and a default parameter fires only on `undefined`, so a null from JSON sails straight past it. `??` is the one that means what you meant.
+- Check the platform before npm. The runtime ships argument parsing, a test runner, and fetch with a timeout signal, and each avoided dependency is also an avoided config file.
+- Never hand-roll a promise around a callback API. The promise version almost always already ships, and where it does not, one wrapper gets the rejection path right where hand-written executors do not.
+- Thread an `AbortController` signal instead of a cancellation flag. Fetch, timers, and listeners all take it, so teardown is one call rather than a map of handler references that drift apart.
+- Serializing is not copying: a JSON round trip silently drops whatever the format cannot say, so clone and snapshot through `structuredClone` and keep JSON for the wire.

@@ -7,7 +7,7 @@
 const BY_EXTENSION: Record<string, string> = {
   ".py": "python", ".pyw": "python",
   ".js": "javascript", ".mjs": "javascript", ".cjs": "javascript", ".jsx": "javascript",
-  ".ts": "javascript", ".tsx": "javascript", ".mts": "javascript", ".cts": "javascript",
+  ".ts": "typescript", ".tsx": "typescript", ".mts": "typescript", ".cts": "typescript",
   ".go": "go",
   ".rs": "rust",
   ".java": "java",
