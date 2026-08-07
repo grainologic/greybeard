@@ -1,5 +1,5 @@
-- `SELECT *` in application code breaks on the next migration. Name the columns you use.
-- `NOT IN` against a nullable column returns nothing at all. `NOT EXISTS` is the form that survives a null.
-- Filtering in application code what the database can filter is a table scan sent over the network.
-- A unique constraint enforces what check-then-insert cannot, because two connections check at the same time.
-- A correlated subquery in the select list is usually a join. Read the plan before accepting either.
+- One statement beats a cursor or an app-side loop. The set-based write is shorter and atomic for free, where the loop needs per-row error handling you then own.
+- Push the rule into a constraint instead of a validation function. One line applies to every writer, including the stray session, and cannot be forgotten by the next caller.
+- `NOT IN` against a nullable column matches nothing, so reach for `NOT EXISTS`. Null is not a value and does not compare like one; plan around that instead of bolting on `COALESCE`.
+- Ship a view before you add a table. If the shape is derivable it costs no writes, no backfill, and no drift, and it can be materialized later if measurement asks.
+- Read the plan before you believe the query is slow. The fix is usually one index or one unwrapped column, not the restructuring you were about to spend a day on.
