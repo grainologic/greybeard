@@ -1,5 +1,5 @@
-- A class with one method and no state is a function. A factory that only returns an object literal is the object literal.
-- A loop pushing into an array is `map` or `filter`. A `reduce` that builds an array is `filter` then `map`.
-- A cancellation flag threaded through call sites is an `AbortController`. Fetch, timers, and event listeners all take its signal.
-- `||` for a default swallows `0` and `""`. `??` is what you meant, and `?.` replaces the `&&` chain guarding a lookup.
-- A date-picker dependency is `<input type="date">`. The platform shipped it, styled, keyboard accessible, and localized.
+- Derive types from the values you already wrote: `typeof config`, `ReturnType<typeof make>`, `keyof typeof handlers`. A hand-written parallel interface is a second source of truth that you update twice and drift once, and `satisfies` gets the narrow type without the annotation-then-cast pair.
+- `enum`, `namespace`, and constructor parameter properties emit runtime JavaScript, so type-stripping runtimes reject them outright. A union of string literals erases cleanly, with `as const` on an object when you need the values at runtime.
+- Six optional fields is a discriminated union you have not written yet. Narrowing on the tag deletes the runtime guards and turns the impossible combination into a compile error.
+- No barrel `index.ts`. It buys one shorter import path and costs import cycles, dead code the bundler can no longer drop, and a file that every rename has to touch.
+- Check the platform before npm: `parseArgs` from `node:util`, `node:test` with `node:assert/strict`, `fetch` with `AbortSignal.timeout(ms)`. Each avoided dependency is also an avoided config file.

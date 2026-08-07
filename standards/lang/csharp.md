@@ -1,5 +1,5 @@
-- A type that is only data is a `record`, which brings value equality and `with` expressions with it.
-- LINQ replaces the loop that filters and projects. A loop that mutates stays a loop.
-- `using` declarations replace the `try/finally` whose only job is disposal.
-- An interface with one implementation and no mock is indirection.
-- `async void` throws where nobody can catch it. Return `Task` unless it is an event handler.
+- A type that only carries data is a positional `record`: one line for value equality, `ToString`, deconstruction, and `with`. An entity that needs reference equality stays a class, which is not a reason to hand-write `Equals` and `GetHashCode`.
+- Write `Dispose(bool)`, a finalizer, and `GC.SuppressFinalize` only for a raw unmanaged handle, and prefer `SafeHandle` so you never write it at all. When every field is itself `IDisposable`, a sealed class with a plain `Dispose()` is the whole implementation.
+- With nullable reference types on, an interior null check is a branch no caller reaches. Guard where untyped data lands, and `ArgumentNullException.ThrowIfNull(x)` takes the parameter name from `CallerArgumentExpression`, so the `nameof` argument is dead text.
+- A mapping library costs a package, a profile class, and a startup registration to replace a `Select` into a record. The boilerplate objection is real at fifty types and imaginary at the three you have.
+- Delete `ConfigureAwait(false)` from application code: ASP.NET Core, console apps, and workers have no `SynchronizationContext` to escape. Keep it in a library shipped to unknown callers, where a WPF consumer still has one.
