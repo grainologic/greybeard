@@ -87,18 +87,19 @@ The rules are the voice in the room. This is what the hands do.
 Around all that: a statusline, a card summing up each run, a toggle panel, and
 `ctrl-alt-g` to flip everything on and off.
 
-## Benchmarks
+## So what does greybeard get you?
 
-Greybeard has been tested. An A/B harness runs each task twice on the same model, once bare, once with greybeard loaded. Same prompts, same checks. Five reps per arm, eight models, three providers. The suite and every result set live at [grainologic/greybeard-benchmarks](https://github.com/grainologic/greybeard-benchmarks).
+Greybeard is measured, not vibed. An A/B harness runs each task twice on the same model, once bare, once with greybeard loaded. Same prompts, same checks, five reps per arm, an eight-model roster across three providers, more than twelve hundred runs landed. The suite and every result set live at [grainologic/greybeard-benchmarks](https://github.com/grainologic/greybeard-benchmarks).
 
-The averages, at the same pass rate:
+At the same pass rate:
 
-- **0.5x the code.** Or better, across the open-ended tasks. The models that build the most unasked came down 4x.
-- **0.75x the output tokens.** The chattiest model in the roster came down 3x.
-- **0.5x the words.** Same tool documented. Every output was scored for slop. Machine tells fell to a median of 0, even the ones the standards never name. The model learns the register, not a list. Accuracy went from 78% to 90%.
-- **Sooner.** The models that write the most before deciding finished 2.5x faster.
+- **Half the code, or better.** On every open-ended task. The models that build the most unasked came down to a quarter of their diff, and they converged: five runs with greybeard landing within two lines of each other where the runs without it sprawled across thirty.
+- **Half the words, none of the slop.** Same tool, documented both ways, every output scored. Machine tells fell to zero, and zero here is a count, not a courtesy: forty READMEs written with greybeard, not one tell, including the tells the standards never name. The model learns the register, not a list.
+- **Models start checking before they claim.** Asked to document a tool, models without greybeard mostly wrote from memory. With it loaded, runs that actually executed the tool first went from under half to four in five, and truthful documents rose from barely three quarters to nine in ten.
+- **Fewer tokens while doing it.** Output tokens usually fall too, and the heaviest spender in the roster was cut to a third. Where they rise instead, the spend is visible in the transcript: that is the model running the code before making claims about it.
+- **And when there is nothing to trim, it costs nothing.** Handed a crisp five-line ask, all 140 runs took the same boring branch with greybeard or without it. Carrying the writing standard alongside the coding one has never cost a code task anything, in any administration.
 
-The averages hide two things. Every deletion in the section above happened with greybeard on. No bare model ever subtracted. And nobody lied about a red build, either way. Greybeard led with the bad news. The bare models put a cheerful line first.
+The averages hide the best parts. Every deletion in the suite's history happened with greybeard loaded: models removed dead code fifteen times with it, never once without. When the build was quietly red, nobody lied either way, but greybeard led with the bad news while the models without it opened with a cheerful line. And the suite keeps the one test greybeard loses, in the open, with the diffs to prove it. Go read it. That is what the rest of the numbers are worth.
 
 ## Install
 
