@@ -84,8 +84,7 @@ The rules are the voice in the room. This is what the hands do.
 | **Three tries at the same file, every one failing. Now what?**<br>The third failure against one target comes back on the failing tool result: the approach is spent, say what the failures prove, then take a different route or report the block. It fires again at six, then stops. Anchored on the target rather than the command, because a dead end keeps the file and swaps the tool around it. |
 | **The model just opened its first Python file.**<br>Five things a senior engineer would not write in that language, once per session, from `standards/lang/`. Twenty-three languages, and a language is added by writing its markdown. |
 
-Around all that: a statusline, a card summing up each run, a toggle panel, and
-`ctrl-alt-g` to flip everything on and off.
+Around all that: a statusline, a toggle panel, and `ctrl-alt-g` to flip everything on and off. Anything that may need your attention lands as a card in the transcript the moment it happens: a dead end, tells the model could not fix, a test gap. A glyph fix gets a toast naming the file. Everything else stays on the statusline.
 
 ## So what does greybeard get you?
 
@@ -144,43 +143,26 @@ change. The markdown is the config.
 
 ## Settings
 
-greybeard keeps two settings files, and neither exists until you change
-something. No file means you get the defaults.
+greybeard keeps two settings files, and neither exists until you change something. No file means you get the defaults.
 
-- **local**, `<project>/.pi/greybeard.json`. Every toggle you flip writes here,
-  so your settings stick to this one project. greybeard reads it only when the
-  project is trusted, because the decision prefix is free text that ends up in
-  the model's instructions.
-- **global**, `~/.config/greybeard/config.json` (it respects `XDG_CONFIG_HOME`,
-  and `%APPDATA%` on Windows). This is your default across every project.
-  `/greybeard default` writes it.
+- **local**, `<project>/.pi/greybeard.json`. Every toggle you flip writes here, so your settings stick to this one project. greybeard reads it only when the project is trusted, because the decision prefix is free text that ends up in the model's instructions.
+- **global**, `~/.config/greybeard/config.json` (it respects `XDG_CONFIG_HOME`, and `%APPDATA%` on Windows). This is your default across every project. `/greybeard default` writes it.
 
-greybeard checks your local file first, then the global one, then falls back to
-the built-in defaults (code on, prose off). Since flipping a toggle always
-writes local, the moment you touch a project it takes over from your global
-default. When you want to go back, drop a layer:
+greybeard checks your local file first, then the global one, then falls back to the built-in defaults (code on, prose off). Since flipping a toggle always writes local, the moment you touch a project it takes over from your global default. When you want to go back, drop a layer:
 
-- `/greybeard reset` (or `reset local`): delete this project's file, fall back
-  to your global default.
+- `/greybeard reset` (or `reset local`): delete this project's file, fall back to your global default.
 - `/greybeard reset global`: clear your cross-project default.
 - `/greybeard reset all`: back to the built-in defaults.
 
-You can also hand-edit `"hideStatus": true` into either file to keep greybeard
-running while hiding the statusline. It survives a `/greybeard default`, so you
-set it once and forget it.
+You can also hand-edit `"hideStatus": true` into either file to keep greybeard running while hiding the statusline. It survives a `/greybeard default`, so you set it once and forget it.
 
-Your settings stay put until you change them, so `.pi/greybeard.json` is a real
-file in your repo: commit it to share the persona with your team, or gitignore
-it to keep it yours.
+Your settings stay put until you change them, so `.pi/greybeard.json` is a real file in your repo: commit it to share the persona with your team, or gitignore it to keep it yours.
 
 ## Skills
 
-- `/skill:greybeard-review`: review a diff or named files against the ladder
-  and the writing standards. Reports what to cut, edits nothing unless asked.
-- `/skill:greybeard-audit`: the same hunt across the whole repo, ranked by
-  payoff.
-- `/skill:greybeard-ledger`: harvest greybeard's decision comments into a
-  ledger, splitting settled decisions from deferred debt. One-shot report.
+- `/skill:greybeard-review`: review a diff or named files against the ladder and the writing standards. Reports what to cut, edits nothing unless asked.
+- `/skill:greybeard-audit`: the same hunt across the whole repo, ranked by payoff.
+- `/skill:greybeard-ledger`: harvest greybeard's decision comments into a ledger, splitting settled decisions from deferred debt. One-shot report.
 
 ## Development
 
@@ -190,9 +172,4 @@ Tests are `*.selfcheck.ts`, plain `node --test`, no framework:
 node --test --experimental-strip-types 'test/*.selfcheck.ts'
 ```
 
-Layout: `index.ts` is the pi entry (the only file that touches the pi API and
-must sit at the extension root for auto-discovery). `lib/` holds the pure,
-pi-free logic (`config.ts`, `deps.ts`, `typography.ts`, `comments.ts`, `tells.ts`,
-`churn.ts`, `languages.ts`), which is why it runs under a bare Node. `test/` holds
-the self-checks, `standards/` the rules it applies with `standards/lang/` the
-per-language examples, `skills/` the on-demand review and audit passes.
+Layout: `index.ts` is the pi entry (the only file that touches the pi API and must sit at the extension root for auto-discovery). `lib/` holds the pure, pi-free logic (`config.ts`, `deps.ts`, `typography.ts`, `comments.ts`, `tells.ts`, `churn.ts`, `languages.ts`), which is why it runs under a bare Node. `test/` holds the self-checks, `standards/` the rules it applies with `standards/lang/` the per-language examples, `skills/` the on-demand review and audit passes.

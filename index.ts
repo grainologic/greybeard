@@ -21,7 +21,11 @@
 // inherits, and a global default. No session-scoped state: local is the live
 // store. `default` promotes the current settings to the global file.
 //
-// Surface stays simple: a footer statusline, one per-run action card, a toggle panel.
+// Surface stays simple, and each action reports where it fires, routed by what it
+// asks of the user: a card when the user may need to act (dead end, tells the model
+// could not fix, test gap), a toast when greybeard itself changed a file on disk
+// (glyph autofix, named file), and the footer statusline alone for steering the
+// model already saw in its tool result. Plus a toggle panel.
 
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -61,7 +65,7 @@ const markerLine = (m: string) =>
 const PROSE = /\.(md|mdx|markdown|txt|rst)$/i;
 const TEST = /(^|[/\\])(tests?|spec|__tests__)[/\\]|\.(test|spec)\./i;
 // Per-file re-flag ceiling per run. A model that cannot fix a tell would otherwise loop
-// on re-writes; after the cap the append goes silent and the run ends.
+// on re-writes; at the cap the append goes silent and a card hands the file to the user.
 const TELL_CAP = 3;
 
 const isProse = (p: string) => PROSE.test(p) || /COMMIT_EDITMSG$/.test(p);
@@ -77,7 +81,23 @@ interface LogData {
   actions: Action[];
 }
 
-// One line for the run card and the run-end toast: what ran, with one number each.
+// One line per action, detail included: the collapsed card line and the autofix toast.
+// A lookup, not a switch: the commands selfcheck greps this file's case labels
+// for subcommand drift and would read action kinds as commands.
+function cardLine(a: Action): string {
+  const n = a.count ?? 1;
+  const lines: Record<ActionKind, string> = {
+    typo: `fixed ${n} glyph${n === 1 ? "" : "s"} in ${a.detail}`,
+    churn: `dead end: ${a.detail}`,
+    dep: `dependency flagged: ${a.detail}`,
+    lang: `language note: ${a.detail}`,
+    tell: a.detail,
+    test: a.detail,
+  };
+  return lines[a.kind];
+}
+
+// Roll-up line for multi-action entries persisted by older sessions.
 function summarize(actions: Action[]): string {
   const c: Record<ActionKind, number> = { typo: 0, dep: 0, tell: 0, test: 0, churn: 0, lang: 0 };
   let glyphs = 0;
@@ -212,6 +232,25 @@ export default function greybeard(pi: ExtensionAPI): void {
     }
   }
 
+  // Route one action to its surface the moment it fires.
+  //   card   the user may need to act: the model is stuck, or failed to comply
+  //   toast  greybeard itself changed a file on disk; transient, names the file
+  //   status ambient: steering the model saw in its tool result
+  // Every action lands in the ledger and the stats panel regardless of surface.
+  function record(ctx: ExtensionContext, action: Action, surface: "card" | "toast" | "status") {
+    runLedger.push(action);
+    syncStatus(ctx);
+    if (surface === "card") {
+      pi.appendEntry<LogData>("greybeard-log", { actions: [action] });
+    } else if (surface === "toast" && ctx.hasUI) {
+      try {
+        ctx.ui.notify(`greybeard: ${cardLine(action)}`, "info");
+      } catch {
+        /* presentation only */
+      }
+    }
+  }
+
   // A toggle writes the project-local file: it is the live store and what a
   // subagent spawned in this cwd inherits. Best-effort; a failed write must not
   // break the toggle.
@@ -306,17 +345,15 @@ export default function greybeard(pi: ExtensionAPI): void {
       if (!mode.code && !mode.prose) return undefined;
       const verdict = recordFailure(churnState, signature(event.toolName, input), (input.command ?? "").length);
       if (!verdict) return undefined;
-      runLedger.push({ kind: "churn", detail: `${verdict.failures} failures on ${verdict.target}` });
+      record(ctx, { kind: "churn", detail: `${verdict.failures} failures on ${verdict.target}` }, "card");
       totals.churn++;
-      syncStatus(ctx);
       return { content: [...event.content, { type: "text" as const, text: formatChurn(verdict) }] };
     }
 
     // coding: dependency reminder (steers via appended note, never blocks)
     if (mode.code && event.toolName === "bash" && detectDependencyInstall(input.command ?? "")) {
-      runLedger.push({ kind: "dep", detail: (input.command ?? "").trim() });
+      record(ctx, { kind: "dep", detail: (input.command ?? "").trim() }, "status");
       totals.dep++;
-      syncStatus(ctx);
       return {
         content: [
           ...event.content,
@@ -338,9 +375,8 @@ export default function greybeard(pi: ExtensionAPI): void {
       const note = languageNote(path);
       if (note) {
         extra.push({ type: "text" as const, text: note });
-        runLedger.push({ kind: "lang", detail: path });
+        record(ctx, { kind: "lang", detail: path }, "status");
         totals.lang++;
-        syncStatus(ctx);
       }
     }
     const withExtra = () => (extra.length ? { content: [...event.content, ...extra] } : undefined);
@@ -376,11 +412,10 @@ export default function greybeard(pi: ExtensionAPI): void {
         try {
           writeFileSync(path, cleaned);
           const n = Object.values(tally).reduce((a, b) => a + b, 0);
-          runLedger.push({ kind: "typo", detail: path, count: n });
+          record(ctx, { kind: "typo", detail: path, count: n }, "toast");
           totals.typo++;
           for (const [k, v] of Object.entries(tally)) glyphTotals[k] = (glyphTotals[k] ?? 0) + v;
           cleanedFiles.add(path);
-          syncStatus(ctx);
         } catch {
           /* best effort; presentation only */
         }
@@ -390,47 +425,41 @@ export default function greybeard(pi: ExtensionAPI): void {
       const flagged = tellFlags.get(path) ?? 0;
       if (tells.length && flagged < TELL_CAP) {
         tellFlags.set(path, flagged + 1);
-        runLedger.push({ kind: "tell", detail: `${path}: ${tells.length} tell(s)` });
+        record(ctx, { kind: "tell", detail: `${path}: ${tells.length} tell(s)` }, "status");
         totals.tell++;
-        syncStatus(ctx);
         return { content: [...event.content, ...extra, { type: "text" as const, text: formatTells(tells) }] };
+      }
+      if (tells.length && flagged === TELL_CAP) {
+        // Tells outlived the cap; the bump past it keeps this to one card per file.
+        tellFlags.set(path, flagged + 1);
+        record(ctx, { kind: "tell", detail: `${path}: ${tells.length} tell(s) remain after ${TELL_CAP} flags` }, "card");
       }
     }
     return withExtra();
   });
 
-  // -- end of run: test backstop, action card --
+  // -- end of run: the test backstop needs the whole run to judge --
   pi.on("agent_settled", (_event, ctx) => {
     active = false;
 
     if (mode.test && touchedSource && !touchedTest) {
-      runLedger.push({ kind: "test", detail: "logic changed, no test touched (proof gate)" });
+      record(ctx, { kind: "test", detail: "logic changed, no test touched (proof gate)" }, "card");
       totals.test++;
     }
 
-    if (runLedger.length) {
-      runsWithActions++;
-      pi.appendEntry<LogData>("greybeard-log", { actions: [...runLedger] });
-      // Run-end toast: one notify, only when something happened. Transient; the
-      // card above is the durable record.
-      if (ctx.hasUI) {
-        try {
-          ctx.ui.notify(`greybeard: ${summarize(runLedger)}`, "info");
-        } catch {
-          /* presentation only */
-        }
-      }
-    }
-
+    if (runLedger.length) runsWithActions++;
     oneShotProse = false; // the one-shot write's run is done
     syncStatus(ctx);
   });
 
-  // -- durable per-run card (never sent to the LLM) --
+  // -- durable card, one per actionable event, appended where it fired (never sent to the LLM) --
+  // Entries from older sessions carry a whole run's actions in one card and get the
+  // roll-up line; a single-action card gets its detail.
   pi.registerEntryRenderer<LogData>("greybeard-log", (entry, { expanded }, theme) => {
     const actions = entry.data?.actions ?? [];
     const box = new Box(1, 1, (t) => theme.bg("customMessageBg", t));
-    box.addChild(new Text(`${GLYPH} ${theme.fg("accent", "greybeard")} ${summarize(actions)}`, 0, 0));
+    const line = actions.length === 1 ? cardLine(actions[0]) : summarize(actions);
+    box.addChild(new Text(`${GLYPH} ${theme.fg("accent", "greybeard")} ${line}`, 0, 0));
     if (expanded) for (const a of actions) box.addChild(new Text(theme.fg("dim", `  ${a.kind}: ${a.detail}`), 0, 0));
     return box;
   });
