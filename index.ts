@@ -30,7 +30,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { CONFIG_DIR_NAME, getSettingsListTheme, type ExtensionAPI, type ExtensionContext } from "@earendil-works/pi-coding-agent";
+import { CONFIG_DIR_NAME, getSettingsListTheme, type ExtensionAPI, type ExtensionContext, type Theme } from "@earendil-works/pi-coding-agent";
 import { Box, Container, Key, type SettingItem, SettingsList, Text } from "@earendil-works/pi-tui";
 import { type ChurnState, formatChurn, recordFailure, signature } from "./lib/churn.ts";
 import { languageFor } from "./lib/languages.ts";
@@ -115,6 +115,22 @@ function summarize(actions: Action[]): string {
   return parts.join(", ");
 }
 
+// Dismissible overlay shared by the read-only panels (help, stats). The
+// settings panel keeps its own custom(): it has real input handling.
+async function showPanel(ctx: ExtensionContext, fallback: string, build: (theme: Theme) => Text[]) {
+  if (ctx.mode !== "tui") return ctx.ui.notify(fallback, "info");
+  await ctx.ui.custom((_tui, theme, _kb, done) => {
+    const c = new Container();
+    for (const t of build(theme)) c.addChild(t);
+    c.addChild(new Text(theme.fg("dim", "press any key to close"), 1, 0));
+    return {
+      render: (w) => c.render(w),
+      invalidate: () => c.invalidate(),
+      handleInput: () => done(undefined),
+    };
+  });
+}
+
 // Static reference card. Purely mechanical: printed as-is, no model involved.
 const HELP: string[] = [
   "greybeard: the least code that works, the least prose that informs.",
@@ -193,7 +209,7 @@ export default function greybeard(pi: ExtensionAPI): void {
     // Scoped flatly, not conditionally: without this line the equivalences read as
     // rewrite orders and contradict "do not convert", and a conditional qualifier
     // is the form small models drop first.
-    return `greybeard: ${slug} examples. They apply to code you are about to write. Working code that already does the job stays as it is.\n${body}`;
+    return `greybeard: ${slug} examples. Apply to code you write or change in this language; working code that already does the job stays as it is.\n${body}`;
   }
   const glyphTotals: GlyphTally = {};
   const cleanedFiles = new Set<string>();
@@ -263,12 +279,24 @@ export default function greybeard(pi: ExtensionAPI): void {
     }
   };
 
-  // -- steering: inject only the enabled axes, appended to the chained system prompt --
+  // -- steering: inject only the enabled axes via prompt sections when supported --
   pi.on("before_agent_start", (event) => {
     const blocks: string[] = [];
     if ((mode.code || mode.prose) && CORE) blocks.push(CORE);
     if (mode.code && CODING) blocks.push(CODING.replace("{{marker_line}}", markerLine(marker)));
     if (mode.prose && WRITING) blocks.push(WRITING);
+
+    // Prefer mutable sections: Pi diffs prompt sections and appends an in-place patch
+    // mid-conversation on supporting models, preserving the prompt cache prefix.
+    if (event.systemPromptOptions?.sections) {
+      if (blocks.length) {
+        event.systemPromptOptions.sections.greybeard = blocks.join("\n\n");
+      } else {
+        delete event.systemPromptOptions.sections.greybeard;
+      }
+      return;
+    }
+
     if (!blocks.length) return;
     // Guard a missing systemPrompt: never prepend the literal string "undefined".
     const base = event.systemPrompt ? `${event.systemPrompt}\n\n` : "";
@@ -491,17 +519,7 @@ export default function greybeard(pi: ExtensionAPI): void {
         );
 
       if (sub === "help" || sub === "?") {
-        if (ctx.mode !== "tui") return ctx.ui.notify(HELP.join("\n"), "info");
-        await ctx.ui.custom((_tui, theme, _kb, done) => {
-          const c = new Container();
-          for (const line of HELP) c.addChild(new Text(line ? theme.fg("text", line) : "", 0, 0));
-          c.addChild(new Text(theme.fg("dim", "press any key to close"), 1, 0));
-          return {
-            render: (w) => c.render(w),
-            invalidate: () => c.invalidate(),
-            handleInput: () => done(undefined),
-          };
-        });
+        await showPanel(ctx, HELP.join("\n"), (theme) => HELP.map((line) => new Text(line ? theme.fg("text", line) : "", 0, 0)));
         return;
       }
 
@@ -586,18 +604,10 @@ export default function greybeard(pi: ExtensionAPI): void {
         if (totals.test) lines.push(`test gaps         ${totals.test}`);
         if (lines.length) lines.push(`runs              ${runsWithActions} of ${runs} took action`);
         else lines.push("no enforcement actions this session");
-        if (ctx.mode !== "tui") return ctx.ui.notify(`greybeard stats\n${lines.join("\n")}`, "info");
-        await ctx.ui.custom((_tui, theme, _kb, done) => {
-          const c = new Container();
-          c.addChild(new Text(`${GLYPH} ${theme.fg("accent", theme.bold("greybeard"))} ${theme.fg("muted", "session stats")}`, 1, 1));
-          for (const line of lines) c.addChild(new Text(theme.fg("text", `  ${line}`), 0, 0));
-          c.addChild(new Text(theme.fg("dim", "press any key to close"), 1, 0));
-          return {
-            render: (w) => c.render(w),
-            invalidate: () => c.invalidate(),
-            handleInput: () => done(undefined),
-          };
-        });
+        await showPanel(ctx, `greybeard stats\n${lines.join("\n")}`, (theme) => [
+          new Text(`${GLYPH} ${theme.fg("accent", theme.bold("greybeard"))} ${theme.fg("muted", "session stats")}`, 1, 1),
+          ...lines.map((line) => new Text(theme.fg("text", `  ${line}`), 0, 0)),
+        ]);
         return;
       }
 
