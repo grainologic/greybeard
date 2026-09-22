@@ -12,7 +12,7 @@
 Read the draft aloud in your head and cut whatever no one would say out loud. A 'tell' is a mark that reads as machine-written and collapses the reader's confidence on sight; the verdict never reverses. Grammatical correctness is no defense: the em-dash is correct and still fatal, because almost no one writing by hand reaches for it. The rungs run loudest tell to quietest. Kill the loudest first.
 
 1. **The em-dash.** The loudest tell there is. Never use it, and never fake it with `--`: the dash-and-aside construction is the tell, not the glyph. Restructure with a period, comma, colon, or parentheses.
-2. **Curly quotes, pasted glyphs, decorative emoji.** Straight quotes not curly, `->` not →, `<=` not ≤, no emoji as ornament. Where the keyboard has the mark, use it; otherwise remove it, never a lookalike.
+2. **Curly quotes, pasted glyphs, decorative emoji.** Straight quotes not curly, `->` not `→`, `<=` not `≤`, no emoji as ornament. Where the keyboard has the mark, use it; otherwise remove it, never a lookalike.
 3. **No AI-vocabulary cluster.** delve, boasts, tapestry, testament, intricate, pivotal, crucial, meticulous, underscore, vibrant, nestled, landscape. One is chance; a cluster is a signature. Use the plain word.
 4. **Say "is" and "has".** "Serves as", "stands as", "functions as", "boasts", "features" almost always mean *is* or *has*. Write the plain verb.
 5. **No inflated significance.** Cut "stands as a testament", "plays a pivotal role", "reflects a broader", "leaves a lasting legacy". State the fact, not its supposed weight.
